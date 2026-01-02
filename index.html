@@ -297,35 +297,55 @@
 
 
 
-            <!-- SECTION 4 -->
-            <details class="section">
-                <summary>3. Types of Priors</summary>
-                <div class="section-content">
-                    <div class="subsection">
-                        <span class="subsection-title">Conjugate Priors</span>
-                        <p>"Same family in, same family out."</p>
-                        <p>“A prior is conjugate to a likelihood if the posterior belongs to the same family of distributions as the prior.”</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Objective Priors</span>
-                        <p>“If you do not have information about a problem, then you do not have any reason to believe one outcome is more likely than any other.”</p>
-                        <p><strong>Reparametrization:</strong> Describing the exact same system using different variables.<br>
-                        </p>
-                        <p><strong>JEFFREY’S PRIOR:</strong> Identifies sensitive parameter values. The "Gold Standard" for 1D problems (estimating one thing).<br>
-                        Invariant under reparametrization.<br>
-                        The "U-shape" (the arcsine distribution) appears specifically for the Bernoulli trial (coin flip) because of how probability works—the edges (0 and 1) are "louder" than the middle.</p>
-                        <p>Other objective priors are sometimes more useful, but usually for a specific reason: Dimensions.</p>
-                        <p><strong>REFERENCE PRIORS:</strong> For multidimensional models, reference priors (developed by Bernardo and others) are generally recommended as a more robust objective prior.<br>
-                        KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Maximum Entropy (MaxEnt) Priors</span>
-                        <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors.</p>
-                        <p>The Maximum Entropy Principle says: "Don't pick a curve that assumes extra stuff you don't know. Instead, you pick the "flattest," most spread-out distribution possible that still obeys your constraints.</p>
-                        <p>This choice maximizes your admitted uncertainty (entropy) rather than sneaking in hidden biases.</p>
-                        <p>For example, in modeling interest rates, a half-normal prevents negative values. Adding more constraints to the Lagrange Equation (lower variance, mean is ‘x’), help the equation use that logic to return the shape strictly implied by the constraints you explicitly provide.</p>
-                        <p><strong>LAGRANGIAN MULTIPLIERS</strong><br>
-                        The General Derivation To find the distribution (p), we write a Lagrangian equation:<br>
+     <!-- SECTION 4 -->
+     <details class="section">
+        <summary>3. Types of Priors</summary>
+        <div class="section-content">
+            
+            <!-- 1. Conjugate Priors (Sibling) -->
+            <div class="subsection">
+                <span class="subsection-title">Conjugate Priors</span>
+                <p>"Same family in, same family out."</p>
+                <p>“A prior is conjugate to a likelihood if the posterior belongs to the same family of distributions as the prior.”</p>
+            </div>
+
+            <!-- 2. Objective Priors (Parent) -->
+            <div class="subsection">
+                <span class="subsection-title">Objective Priors</span>
+                <p>“If you do not have information about a problem, then you do not have any reason to believe one outcome is more likely than any other.”</p>
+                
+                <!-- Child: Reparametrization -->
+                <div class="subsection" style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px;">
+                    <strong>Reparametrization</strong>
+                    <p>Describing the exact same system using different variables.</p>
+                </div>
+
+                <!-- Child: Jeffrey's Prior -->
+                <div class="subsection" style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px;">
+                    <strong>JEFFREY’S PRIOR</strong>
+                    <p>Identifies sensitive parameter values. The "Gold Standard" for 1D problems (estimating one thing).<br>
+                    Invariant under reparametrization.</p>
+                </div>
+
+                <!-- Child: Reference Priors -->
+                <div class="subsection" style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px;">
+                    <strong>REFERENCE PRIORS</strong>
+                    <p>For multidimensional models, reference priors (developed by Bernardo and others) are generally recommended as a more robust objective prior.<br>
+                    KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior).</p>
+                </div>
+
+                <!-- Child: MaxEnt Priors -->
+                <div class="subsection" style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px;">
+                    <span class="subsection-title">Maximum Entropy (MaxEnt) Priors</span>
+                    <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors.</p>
+                    <p>The Maximum Entropy Principle says: "Don't pick a curve that assumes extra stuff you don't know. Instead, you pick the "flattest," most spread-out distribution possible that still obeys your constraints.</p>
+                    <p>This choice maximizes your admitted uncertainty (entropy) rather than sneaking in hidden biases.</p>
+                    <p>For example, in modeling interest rates, a half-normal prevents negative values. Adding more constraints to the Lagrange Equation (lower variance, mean is ‘x’), help the equation use that logic to return the shape strictly implied by the constraints you explicitly provide.</p>
+
+                    <!-- Grandchild: Lagrangian Multipliers (Nested inside MaxEnt) -->
+                    <div class="subsection" style="margin-left: 20px; border-left: 2px solid #888; padding-left: 10px;">
+                        <strong>LAGRANGIAN MULTIPLIERS</strong>
+                        <p>The General Derivation To find the distribution (p), we write a Lagrangian equation:<br>
                         L = Entropy - λ (Constraint).<br>
                         We want the peak of this equation, so we take the derivative with respect to p and set it to zero.</p>
                         <p>This rearranges algebraically to:<br>
@@ -333,12 +353,15 @@
                         Here, f(x) is your data constraint and λ is the multiplier.</p>
                         <p>The math says: the probability at any point is just an exponential decay of how much that point violates your constraint.</p>
                     </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Prior Predictive Distribution</span>
-                        <p>It’s a sanity check. You draw parameters from your prior, then simulate data from them. If this "fake" data looks impossible—like negative heights or million-degree days—you know your prior is unrealistic and needs tightening.</p>
-                    </div>
                 </div>
-            </details>
+            </div>
+
+            <!-- 3. Prior Predictive Distribution (Sibling) -->
+            <div class="subsection">
+                <span class="subsection-title">Prior Predictive Distribution</span>
+                <p>It’s a sanity check. You draw parameters from your prior, then simulate data from them. If this "fake" data looks impossible—like negative heights or million-degree days—you know your prior is unrealistic and needs tightening.</p>
+            </div>
+
         </div>
     </details>
 
