@@ -366,12 +366,10 @@
                     <div class="subsection">
                         <span class="subsection-title">1. R Hat: Convergence Factor [Gelman-Rubin]</span>
                         <p>MCMC methods have theoretical guarantees of correctness regardless of starting point, but only for infinite samples. In practice, we need ways to assess convergence for finite samples.</p>
-                        <p><strong>When to use ˆR (Gelman-Rubin statistic)</strong><br>
-                        Check this first to verify convergence.<br>
-                        ˆR compares the spread between different chains to the spread within them. If ˆR > 1.01, your chains are effectively "disagreeing" or haven't mixed yet — the simulation isn't finished, so don't trust the results.</p>
-                        <p><strong>When to use ESS (Effective Sample Size)</strong><br>
+                        <p>ˆR compares the spread between different chains to the spread within them. If ˆR > 1.01, your chains are effectively "disagreeing" or haven't mixed yet — the simulation isn't finished, so don't trust the results.</p>
+                        <p><strong>2. ESS (Effective Sample Size)</strong><br>
                         Check this second to measure precision.<br>
-                        Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples. High autocorrelation reduces ESS. You need a sufficient ESS (often >400 or >1000 per chain) to ensure your estimates and error bars are stable.</p>
+                        Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">2. EFFECTIVE SAMPLE SIZE (ESS)</span>
@@ -379,13 +377,11 @@
                         <p><strong>The Calculation Steps</strong><br>
                         Since the true autocorrelations ρ_k are unknown, they are estimated from the samples themselves:</p>
                         <p>1. Generate Samples<br>
-                        Run your MCMC algorithm (e.g., Metropolis-Hastings, NUTS) on the intractable distribution to obtain a chain of N samples:<br>
-                        x₁, x₂, ..., x_N.</p>
+                        Run your MCMC algorithm</p>
                         <p>2. Calculate Autocorrelation<br>
-                        Compute the empirical autocorrelation ρ̂_k for different lags k = 1, 2, 3, .... This measures how much the current sample depends on previous samples.</p>
+                        Compute the empirical autocorrelation ρ̂_k for different lags k = 1, 2, 3, </p>
                         <p>3. Sum the Correlations (Truncation)<br>
-                        You cannot sum to infinity (or even to N) because the noise in estimates of ρ̂_k for large k dominates the signal.<br>
-                        Standard software (like Stan, ArviZ, or R's coda) truncates the sum when the autocorrelation drops below a certain threshold or becomes negative (typically when the pair ρ̂_k + ρ̂_{k+1} becomes negative).</p>
+                        <p>Standard software (like Stan, ArviZ, or R's coda) truncates the sum when the autocorrelation drops below a certain threshold. This step is crucial to filter out noise.</p>
                         <p>4. Final Division<br>
                         Divide the total number of samples N by this summed quantity (τ) to obtain the effective sample size.</p>
                     </div>
