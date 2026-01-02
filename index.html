@@ -552,7 +552,7 @@
                         <p><strong>What is the "Marginal Distribution"?</strong><br>
                         This answers the question: "Where are we right now?"<br>
                         <br>
-                        The marginal distribution aggregates all possible histories into a single snapshot of the present. While a "joint distribution" tracks the likelihood of every specific sequence of steps you took, the marginal distribution sums up the probabilities of every path that could have possibly led here. It doesn't "delete" the past; it collapses it. It consolidates the uncertainty of the entire journey to answer one specific question: "Given all the evidence so far, what is the probability I am at location X right now?".</p>
+                        <p>The marginal distribution aggregates all possible histories into a single snapshot of the present. While a "joint distribution" tracks the likelihood of every specific sequence of steps you took, the marginal distribution sums up the probabilities of every path that could have possibly led here. It doesn't "delete" the past; it collapses it. It consolidates the uncertainty of the entire journey to answer one specific question: "Given all the evidence so far, what is the probability I am at location X right now?".</p>
                         <p><strong>When to use it?</strong><br>
                         You use this whenever you need to estimate a variable that is dynamic (changing) and indirectly observed (noisy).<br>
                         Robotics/GPS: Your phone uses this (often a Kalman Filter). The GPS sensor is accurate to ~10m, but your blue dot on maps moves smoothly. That smooth movement is the hidden state 𝐱 being filtered from the noisy GPS data 𝐲.<br>
