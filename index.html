@@ -497,7 +497,7 @@
                     <div class="subsection">
                         <span class="subsection-title">The "Skeptical" Distribution</span>
                         <p>"Irrelevant until proven Essential."</p>
-                        <p><strong>How it works as a test:</strong> When you aren't sure if a variable (like a specific sensor, a gene, or a market indicator) is predictive, you assign it a Laplace Prior. This forces the model to play a game of "King of the Hill."<br>
+                        <p><strong>How it works as a test:</strong> When you aren't sure if a variable (like a specific sensor, a gene, or a market indicator) is predictive, you assign it a Laplace Prior.<br>
                         1. The Prior pulls every single variable toward zero (meaning: "this variable has no effect").<br>
                         2. The Data fights back. If a variable effectively lowers the error rate, the Data pulls it away from zero.<br>
                         3. The Result: Because the Laplace peak is so sharp, weak variables slide all the way down to exactly zero and "die." Only the variables with genuine, strong predictive power can survive the pull and remain non-zero.</p>
@@ -508,21 +508,12 @@
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Sector Examples</span>
-                        <p><strong>1. Infrastructure: Smart Grid Load Balancing</strong><br>
-                        The Unknown: You are managing a city's power grid. You have thousands of potential data inputs that might predict a power surge: temperature, humidity, wind speed, the time of day, the schedule of the local football stadium, the stock market opening bell, or school holidays. You don't know which combination actually drives demand.<br>
-                        The Application: You feed all these inputs into a regression model with Laplace Priors on their coefficients.<br>
-                        The Result: The model zeros out "Wind Speed" and "Stock Market" because their connection to power usage is weak or random. However, "Temperature" (AC usage) and "Stadium Schedule" (floodlights) survive the Laplace filter with large coefficients.<br>
-                        • Outcome: You stop paying for the expensive stock market data feed because the Laplace Prior proved it had zero predictive value for the grid, saving money and simplifying the dashboard for operators.</p>
-                        <p><strong>2. Defense: Acoustic Signature Classification (Sonar)</strong><br>
+                        <p><strong> Defense: Acoustic Signature Classification (Sonar)</strong><br>
                         The Unknown: A submarine's passive sonar picks up a complex noise in the water. This sound is a mix of thousands of frequencies. You need to know if this is a whale, a merchant ship, or an enemy submarine. Most frequencies are just "ocean background noise," but you don't know which frequencies contain the hidden mechanical hum of a propeller.<br>
                         The Application: You treat every frequency band (Hz) as a variable. You apply a Laplace Prior to the amplitude weights of these bands.<br>
                         The Result: The Laplace Prior aggressively suppresses the thousands of frequencies related to waves and shrimp (background noise), forcing their weights to zero. It leaves behind a "sparse" set of specific non-zero frequencies—perhaps a harmonic series at 50Hz, 100Hz, and 150Hz.<br>
                         • Outcome: This sparse "fingerprint" is isolated from the noise. The system instantly recognizes this specific harmonic pattern as the signature of a specific class of diesel-electric engine, ignoring the rest of the ocean's chaotic noise.</p>
-                        <p><strong>3. Healthcare: Drug Toxicity Prediction</strong><br>
-                        The Unknown: You are developing a new drug and want to know if it will cause liver damage. You have data on the chemical structure of the drug, represented by thousands of molecular descriptors (number of carbon rings, bond angles, electrostatic charges, etc.). You don't know which structural feature causes the toxicity.<br>
-                        The Application: You model the toxicity score using these thousands of molecular features, placing a Laplace Prior on the influence of each feature.<br>
-                        The Result: The model discards 98% of the chemical features, setting them to zero. It reveals that toxicity is driven almost exclusively by the presence of a specific "nitrogen ring" structure combined with high solubility.<br>
-                        • Outcome: Instead of telling chemists "change the molecule," you can tell them specifically: "Remove the nitrogen ring." The Laplace Prior turned a prediction problem into a design instruction by isolating the specific "toxic" variable</p>
+                        
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Hamiltonian Monte Carlo + LaPlace Priors = Bayesian Lasso</span>
@@ -550,10 +541,9 @@
                         <span class="subsection-title">1. FILTERING</span>
                         <p>It is a rhythm of Prediction and Correction.<br>
                         It separates the world into two layers:<br>
-                        The Hidden Layer (𝐱ₜ): The "True State." This is reality. (e.g., The exact coordinate of a missile, the true volatility of a stock, or the actual temperature of a nuclear core). You never see this.<br>
+                        The Hidden Layer (𝐱ₜ): The "True State." This is reality. You never see this.<br>
                         The Observation Layer (𝐲ₜ): The "Noisy Data." This is what your sensors tell you. (e.g., A blurry radar blip, a fluctuating stock price, or a thermometer reading with a margin of error).</p>
-                        <p><strong>How does it work?</strong><br>
-                        The model operates in a continuous loop called Filtering. It is a rhythm of Prediction and Correction.</p>
+                       
                         <p><strong>Best illustrated with an example</strong><br>
                         Imagine you are driving into a tunnel and your GPS loses signal.<br>
                         Predict (The Physics): Even without signal, the GPS assumes you are still moving forward at 60mph. It uses the previous state (𝐱ₜ₋₁) to predict the current state (𝐱ₜ).<br>
@@ -561,8 +551,8 @@
                         Filter: The model combines its guess with the new data. If the satellite signal is usually noisy/unreliable, it trusts the guess more. If the signal is precise, it trusts the data more. The result is the Filtered Estimate.</p>
                         <p><strong>What is the "Marginal Distribution"?</strong><br>
                         This answers the question: "Where are we right now?"<br>
-                        In probability, a "joint distribution" would try to calculate the probability of the entire path you took from time 0 to today. That is computationally heavy.<br>
-                        The marginal distribution (𝑝(𝐱ₖ∣𝐲₀:ₖ)) discards the history of how you got there. It focuses all its probability mass on defining the uncertainty of your location at this exact moment, conditioned on all past data.</p>
+                        <br>
+                        The marginal distribution aggregates all possible histories into a single snapshot of the present. While a "joint distribution" tracks the likelihood of every specific sequence of steps you took, the marginal distribution sums up the probabilities of every path that could have possibly led here. It doesn't "delete" the past; it collapses it. It consolidates the uncertainty of the entire journey to answer one specific question: "Given all the evidence so far, what is the probability I am at location X right now?".</p>
                         <p><strong>When to use it?</strong><br>
                         You use this whenever you need to estimate a variable that is dynamic (changing) and indirectly observed (noisy).<br>
                         Robotics/GPS: Your phone uses this (often a Kalman Filter). The GPS sensor is accurate to ~10m, but your blue dot on maps moves smoothly. That smooth movement is the hidden state 𝐱 being filtered from the noisy GPS data 𝐲.<br>
