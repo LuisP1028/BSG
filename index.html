@@ -460,8 +460,7 @@
                     <div class="subsection">
                         <span class="subsection-title">Pareto Shape Parameter</span>
                         <p><strong>IDENTIFYING OVER-EMPHASIZED DATAPOINTS</strong><br>
-                        PSIS-LOO: Pareto Shape Parameter<br>
-                        In PSIS-LOO (Pareto Smoothed Importance Sampling Leave-One-Out), the shape parameter estimates how much the model relies on a single data point.</p>
+                        <p>In PSIS-LOO (Pareto Smoothed Importance Sampling Leave-One-Out), the shape parameter estimates how much the model relies on a single data point.</p>
                         <p>- Low Pareto Values<br>
                         The data point is normal; the model understands it easily alongside the others.</p>
                         <p>- High Pareto Values (> 0.7):<br>
@@ -472,10 +471,10 @@
                         <p>pₗₒₒ measures the gap between in-sample fit (memorization) and out-of-sample generalization.</p>
                         <p><strong>Formula</strong><br>
                         pₗₒₒ = lppd − elpdₗₒₒ<br>
-                        - lppd: Log pointwise predictive density on training data (overly optimistic due to overfitting/"double-dipping").<br>
-                        - elpdₗₒₒ: Honest out-of-sample score via LOO cross-validation.</p>
+                        - lppd: LPPD is a score of how well the model's parameters generate the historical data.<br>
+                        - elpdₗₒₒ: ELPD is a score of how well the model generates new data.</p>
                         <p><strong>Interpretation</strong><br>
-                        pₗₒₒ represents the model's "optimism" (overfitting tendency).<br>
+                        pₗₒₒ represents the model's overfitting tendency.<br>
                         - Ideal: pₗₒₒ ≈ actual number of parameters (e.g., ~5 for 5 variables).<br>
                         - Very large pₗₒₒ: Model is overly flexible and overfitting noise heavily.<br>
                         - pₗₒₒ >> actual parameters: Model relies too much on influential data points (high leverage) or the prior is too weak.</p>
