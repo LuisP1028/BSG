@@ -621,17 +621,7 @@
                         ▬ι𓆃<br>
                         * The State Vector (𝐗ₜ) is the "Hidden Truth." It contains every detail the system tracks to function mathematically (e.g., [Position, Velocity, Acceleration]).<br>
                         * The Observation Matrix (𝐇ₜ) is the "Selector." It tells the equation which parts of that truth the sensor can actually see.</p>
-                        <p><strong>How the Math Works (The "Dot Product"):</strong><br>
-                        Imagine a simple vehicle tracker.<br>
-                        * The State 𝐗ₜ has two rows: Position (top) and Velocity (bottom).<br>
-                        * Your sensor is a GPS that only reads location; it is blind to speed.<br>
-                        * Therefore, the Observation Matrix 𝐇ₜ is set to [1, 0].<br>
-                        When 𝐇ₜ multiplies 𝐗ₜ, it performs a row-by-column calculation:<br>
-                        (1 × Position) + (0 × Velocity) = Observed Position<br>
-                        By multiplying Velocity by 0, the matrix mechanically deletes that information from the result. By multiplying Position by 1, it passes that information through unchanged.</p>
-                        <p><strong>The Result:</strong><br>
-                        This reduces the complex 2-dimensional state down to a 1-dimensional measurement (𝐘ₜ).<br>
-                        The matrix mathematically simulates the sensor's limitations, ensuring the Kalman Filter compares "apples to apples"—matching its internal prediction of position against the actual GPS reading, while ignoring the velocity that the GPS cannot measure.</p>
+
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Generative Process of the Linear Gaussian State Space Model (SSM)</span>
