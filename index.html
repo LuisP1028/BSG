@@ -570,9 +570,7 @@
                         It is typically a two-pass process, often called the Forward-Backward algorithm:<br>
                         Forward Pass (Filtering): You run the standard filter from time 0 to 𝑇. You make your best guesses in real-time.<br>
                         Backward Pass (Smoothing): You start at the end (time 𝑇) and walk backwards to time 0. You use the information from the end of the sequence to correct the estimates in the middle.</p>
-                        <p><strong>The Analogy: Imagine reading a messy handwritten sentence.</strong><br>
-                        * Filtering: You read word-by-word. You see a squiggle and guess it says "cat."<br>
-                        * Smoothing: You finish the sentence. The end of the sentence talks about "tires" and "engines." You go back and realize the squiggle was actually "car." The future context fixed the past interpretation.</p>
+                        
                         <p><strong>When to use it?</strong><br>
                         You use Smoothing for retrospective analysis or offline processing, where you have recorded data and need the highest accuracy possible, not real-time responsiveness.<br>
                         * Climate Science: Reconstructing past temperatures (𝐱) using ice cores and tree rings (𝐲). You aren't predicting tomorrow; you are refining the history of the last 100 years.<br>
@@ -591,32 +589,30 @@
                         <p><strong>1. The State Evolution Equation</strong><br>
                         <span class="code-block">𝐗ₜ = 𝐅ₜ 𝐗ₜ₋₁ + 𝛈ₜ</span><br>
                         This equation defines the "physics" of the hidden system.<br>
-                        * 𝐗ₜ (State Vector): This is not a single number, but a column of numbers (a vector) representing the complete internal status of the system. For a moving object, this vector might contain [position, velocity, acceleration]. It holds all dimensions required to predict the future, even those not directly visible.<br>
-                        * 𝐅ₜ (Transition Matrix): This matrix is the "engine" of the system. It is a linear operator that multiplies the previous state vector (𝐗ₜ₋₁) to calculate the new state. It encodes the rules of interaction between state variables—for example, it mathematically enforces that "current position = previous position + previous velocity."<br>
-                        * 𝛈ₜ (Process Noise Vector): A vector of random shocks representing external realities not captured by your physics engine (e.g., wind gusts or wheel slip).<br>
-                        * 𐐐ₜ (Process Covariance Matrix): This matrix defines the geometry of the uncertainty in the system dynamics. The numbers on the diagonal tell you the magnitude (variance) of the shocks for each variable. The off-diagonal numbers tell you the correlations—if the velocity gets a random shock, does the position also tend to get a shock?</p>
+                        * 𝐗ₜ (State Vector): A column of numbers representing the complete internal status of the system. For a moving object, this vector might contain [position, velocity, acceleration]. It holds all dimensions required to predict the future, even those not directly visible.<br>
+                        * 𝐅ₜ (Transition Matrix): It encodes the rules of interaction between state variables. It is a linear operator that multiplies the previous state vector (𝐗ₜ₋₁) to calculate the new state. For example, it mathematically enforces that "current position = previous position + previous velocity."<br>
+                        * 𝛈ₜ (Process Noise Vector): A number column of random shocks representing external realities not captured by your physics engine (e.g., wind gusts or wheel slip).<br>
+                        * 𐐐ₜ (Process Covariance Matrix): The numbers on the diagonal tell you the magnitude (variance) of the shocks for each variable. The off-diagonal numbers tell you the correlations—if the velocity gets a random shock, does the position also tend to get a shock? </p>
                         <p><strong>2. The Observation Equation</strong><br>
                         <span class="code-block">𝐘ₜ = 𝐇ₜ 𝐗ₜ + 𝛆ₜ</span><br>
                         This equation defines the "lens" through which we view the system.<br>
                         * 𝐘ₜ (Observation Vector): The raw data collected by your sensors at time 𝑡. This vector typically has fewer dimensions than the state vector (e.g., a GPS sensor reads [position], but cannot read [velocity]).<br>
-                        * 𝐇ₜ (Observation Matrix): This matrix describes the relationship between the hidden truth and the sensor reading. It acts as a projection operator, mapping the high-dimensional "State Space" down to the lower-dimensional "Measurement Space." It essentially selects or combines parts of 𝐗ₜ to simulate what the sensor should see.<br>
+                        * 𝐇ₜ (Observation Matrix):  It acts as a projection operator, mapping the high-dimensional "State Space" down to the lower-dimensional "Measurement Space."  This matrix describes the relationship between the hidden truth and the sensor reading.<br>
                         * 𝛆ₜ (Measurement Noise Vector): A vector representing the random error or "static" inherent in the sensors.<br>
                         * 𝐑ₜ (Measurement Covariance Matrix): This matrix quantifies the reliability of your sensors. A high value on the diagonal means that specific sensor is very noisy (high variance); a low value means it is precise. The Kalman Filter uses this matrix to decide how much to "trust" the incoming data 𝐘ₜ versus its own prediction from Step 1.</p>
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Operational Interactions: The Mechanics of the Matrix</span>
-                        <p>How these mathematical components mechanically interact to simulate the system.</p>
+                        <p> Transition Matrix * t-1 State Vector</p>
                         <p><strong>1. The State Update: Linear Combination and Displacement</strong><br>
                         [[[ 𝐅ₜ 𝐗ₜ₋₁ + 𝛈ₜ<br>
                         The product of the transition matrix [𝐅ₜ] and the previous values of the state vector [𝐗ₜ₋₁] is used to ensure the transformation rules are being enforced. ]]]<br>
                         ▬ι𓆃<br>
-                        • The Matrix-Vector Product (𝐅ₜ 𝐗ₜ₋₁): This operation functions as a "mixing board." In linear algebra, multiplying a matrix by a vector creates a linear combination of the inputs.<br>
+                        • The Matrix-Vector Product (𝐅ₜ 𝐗ₜ₋₁): This operation functions as a "mixing board." <br>
                         Consider a simple physics example where the state vector contains [Position, Velocity].<br>
                         The transition matrix [𝐅ₜ ]contains the "rules"<br>
-                        (Positionₙₑₓₜ = Positionₒₗₔ + Velocityₒₗₔ × Δ𝑡).<br>
-                        When 𝐅ₜ multiplies 𝐗ₜ₋₁, it simultaneously calculates the new values for every row in the vector by taking the weighted sum of the previous values. It mechanically enforces the coupling between variables—ensuring the new position is mathematically derived from the old velocity.<br>
-                        • The Vector Addition (+ 𝛈ₜ): This operation performs a coordinate shift. After the matrix 𝐅ₜ predicts the perfect theoretical location of the system in the abstract state space, the addition of the noise vector 𝛈ₜ "nudges" that point off-target. It displaces the state coordinate randomly, simulating the external forces that the physics definitions ignored.</p>
-                        <p>Here is a clarified explanation of the interaction between the Observation Matrix and the State Vector:</p>
+                        
+                        
                         <p><strong>2. The Observation Projection: Translation and Selection</strong><br>
                         [[[ 𝐇ₜ 𝐗ₜ<br>
                         The product of the obs matrix [𝐇ₜ ] by the state vector [𝐗ₜ]is to filter out latent variables. ]]]<br>
