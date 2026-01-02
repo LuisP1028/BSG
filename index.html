@@ -314,23 +314,15 @@
                         <p><strong>JEFFREY’S PRIOR:</strong> Identifies sensitive parameter values. The "Gold Standard" for 1D problems (estimating one thing).<br>
                         Invariant under reparametrization.<br>
                         
-                        <p><strong>REFERENCE PRIORS:</strong> For multidimensional models, reference priors (developed by Bernardo and others) are generally recommended as a more robust objective prior.<br>
+                        <p><strong>REFERENCE PRIORS:</strong> Maximize Kullback-Leibler Divergence; measures distance between posterior and prior distributions, with more distance being better [higher information distance]. By not encoding any bias on the prior, this lets the data speak as we collect more samples.<br>
                         KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)</p>
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Maximum Entropy (MaxEnt) Priors</span>
-                        <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors.</p>
-                        <p>The Maximum Entropy Principle says: "Don't pick a curve that assumes extra stuff you don't know. Instead, you pick the "flattest," most spread-out distribution possible that still obeys your constraints.</p>
-                        <p>This choice maximizes your admitted uncertainty (entropy) rather than sneaking in hidden biases.</p>
-                        <p>For example, in modeling interest rates, a half-normal prevents negative values. Adding more constraints to the Lagrange Equation (lower variance, mean is ‘x’), help the equation use that logic to return the shape strictly implied by the constraints you explicitly provide.</p>
+                        <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors. By selecting the flattest prior possible that obeys your constraints, you maximize you admitted uncertainty.</p>
+                        <p>For example, in modeling interest rates, a half-normal prevents negative values. By maximizing entropy, we allow the data to speak for itself.</p>
                         <p><strong>LAGRANGIAN MULTIPLIERS</strong><br>
-                        The General Derivation To find the distribution (p), we write a Lagrangian equation:<br>
-                        L = Entropy - λ (Constraint).<br>
-                        We want the peak of this equation, so we take the derivative with respect to p and set it to zero.</p>
-                        <p>This rearranges algebraically to:<br>
-                        <span class="code-block">p(x) = (1/Z) e^{-λ ⋅ f(x)}</span><br>
-                        Here, f(x) is your data constraint and λ is the multiplier.</p>
-                        <p>The math says: the probability at any point is just an exponential decay of how much that point violates your constraint.</p>
+                        <p>The math says: the probability at any point is just an exponential decay of how much that point violates your constraint(s).</p>
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Prior Predictive Distribution</span>
@@ -353,14 +345,14 @@
                 <div class="section-content">
                     <div class="subsection">
                         <span class="subsection-title">Bayesian Test Statistic (T-Stat)</span>
-                        <p>You define the test statistic based on what you suspect the model is missing.</p>
+                        
                         <p>In Bayesian posterior predictive checks (PPCs), the "T" in diagrams (often labeled as T(y) or similar) isn't usually the Student's t-test; it’s a placeholder for "Test Statistic." It refers to any metric you choose to stress-test your model.</p>
                         <p>You define the test statistic based on what you suspect the model is missing.<br>
-                        Worried about outliers? The test statistic could be the "maximum value." Worried about zeros? The test statistic could be the "percentage of zeros." You simply compare the real test statistic to the simulated test statistics. It’s a custom diagnostic probe, not a standardized formula from a table.</p>
+                        
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Bayesian P-Values</span>
-                        <p>A Bayesian p-value (p_B) isn't about a null hypothesis; it checks if your model can replicate reality. We generate thousands of simulated datasets (MCMC, VI) based on the posterior, then calculate our chosen test statistic (T) for the real data and every simulation.</p>
+                        
                         <p>p_B is simply the proportion of simulations where T_sim > T_obs.</p>
                         <p>An ideal p_B is ≈0.5, meaning the real data sits comfortably in the middle of the model's predictions. Values near 0 or 1 indicate systematic bias.</p>
                     </div>
