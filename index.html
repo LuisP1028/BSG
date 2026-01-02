@@ -421,7 +421,7 @@
                         <p><strong>1. The Landscape (Negative Log-Probability)</strong><br>
                         To apply physics to statistics, we treat the probability distribution as a "Potential Energy" field.<br>
                         • The Inversion: In physics, gravity pulls objects to the lowest energy state (the bottom of a valley). In statistics, we want the highest probability (the top of a peak). By taking the negative of the probability, we flip the map upside down: high-probability peaks become deep valleys that the sampler naturally "falls" into.<br>
-                        • The Logarithm: We use the log-probability because computers struggle to multiply tiny probabilities without crashing (underflow). Logarithms turn difficult multiplication into safe addition, keeping the simulation numerically stable.</p>
+                        
                         <p><strong>2. Momentum (The Kick)</strong><br>
                         To move around this landscape, we give the sampler a physical "kick." We pair every parameter with an auxiliary momentum variable, sampled from a proposal distribution (typically a Gaussian).<br>
                         The shape of this distribution (the mass matrix) acts like a vehicle's suspension. If tuned correctly to the valley's geometry, it allows the sampler to traverse long distances and complex correlations efficiently, rather than stumbling blindly like standard random-walk samplers.</p>
@@ -430,17 +430,14 @@
                         • Diagonal Matrix: The industry standard. It estimates the variance of each parameter independently. It effectively "squishes" long dimensions and stretches short ones to make the probability valley look like a round bowl.<br>
                         • Dense Matrix: The "heavy artillery" for highly correlated parameters. If the valley runs diagonally, a Dense matrix captures the covariance and rotates the entire coordinate system, turning a tight, diagonal ravine into a perfectly aligned bowl.</p>
                         <p><strong>3. Simulation (Leapfrog Integration)</strong><br>
-                        We simulate the trajectory using a method called Leapfrog integration. The sampler trades Potential Energy for Kinetic Energy: it speeds up as it dives into high-probability valleys and slows down as it climbs low-probability hills. This allows it to explore the entire shape of the "bowl" (the posterior) rather than just sitting at the bottom.</p>
+                        The sampler trades Potential Energy for Kinetic Energy: it speeds up as it dives into high-probability valleys and slows down as it climbs low-probability hills. This allows it to explore the entire shape of the "bowl" (the posterior) rather than just sitting at the bottom.</p>
                         <p><strong>4. Acceptance (Energy Conservation)</strong><br>
                         In a perfect physical system, Total Energy (Potential + Kinetic) is conserved. However, because computer simulations use discrete time steps, tiny errors creep in. We compare the energy at the start and end of the trajectory. If the energy is roughly conserved, the move is accepted. This correction step ensures the resulting samples are statistically valid.</p>
                         <p><strong>5. Divergences (The "Check Engine" Light)</strong><br>
                         If the landscape is too treacherous—like a "funnel" with a dangerously steep neck—the simulation step size may fail to capture the curvature. When this happens, the physics break, and energy shoots to infinity.<br>
-                        These divergent transitions are invaluable diagnostics. They usually cluster in specific problem areas, pinpointing exactly where the geometry is broken. This guides reparameterization: the process of mathematically rewriting variables to reshape the terrain without changing predictions. For instance, a "non-centered parameterization" decouples correlated variables, effectively unfolding a crumpled funnel into a smooth, flat plain. By seeing where divergences occur, you know exactly which variables to untangle to fix the model.</p>
+                        These divergent transitions are invaluable diagnostics. They usually cluster in specific problem areas, pinpointing exactly where the geometry is broken. This guides reparameterization: the process of mathematically rewriting variables to reshape the terrain without changing predictions. </p>
                     </div>
-                    <div class="subsection">
-                        <span class="subsection-title">NON CENTERED PARAMETRIZATION</span>
-                        <p>Hierarchical models often create correlation "funnels" that trap samplers. Non-centered parameterization fixes this by modeling variables as standardized deviations rather than direct dependencies. This decouples the parameters, effectively "unfolding" the crumpled geometry into a smooth plain. HMC can then navigate the terrain without divergences.</p>
-                    </div>
+                   
                 </div>
             </details>
 
