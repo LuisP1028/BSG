@@ -451,7 +451,7 @@
                         • Identity Matrix: The default setting. It assumes all parameters have the exact same scale and no correlations. It often struggles with real-world data (e.g., comparing "Income" to "Age").<br>
                         • Diagonal Matrix: The industry standard. It estimates the variance of each parameter independently. It effectively "squishes" long dimensions and stretches short ones to make the probability valley look like a round bowl.<br>
                         • Dense Matrix: The "heavy artillery" for highly correlated parameters. If the valley runs diagonally, a Dense matrix captures the covariance and rotates the entire coordinate system, turning a tight, diagonal ravine into a perfectly aligned bowl.</p>
-                        <p><strong>3. Simulation (Leapfrog Integration)</strong><br>
+                        <p><strong>3. Simulation</strong><br>
                         The sampler trades Potential Energy for Kinetic Energy: it speeds up as it dives into high-probability valleys and slows down as it climbs low-probability hills. This allows it to explore the entire shape of the "bowl" (the posterior) rather than just sitting at the bottom.</p>
                         <p><strong>4. Acceptance (Energy Conservation)</strong><br>
                         In a perfect physical system, Total Energy (Potential + Kinetic) is conserved. However, because computer simulations use discrete time steps, tiny errors creep in. We compare the energy at the start and end of the trajectory. If the energy is roughly conserved, the move is accepted. This correction step ensures the resulting samples are statistically valid.</p>
