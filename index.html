@@ -267,7 +267,7 @@
                 <div class="section-content">
                     <div class="subsection">
                         <span class="subsection-title">Markov Chain Monte Carlo (MCMC)</span>
-                        <p> MCMC approximates parameter specifications t builds a chain of samples that maps the posterior distribution's shape and uncertainty.
+                        <p> MCMC approximates parameter specifications, it builds a chain of samples that maps the posterior distribution's shape and uncertainty
                             .</p>
                         <p>It builds a Markov chain: starting from an initial point, it repeatedly proposes new "guesses" from a proposal distribution and decides whether to accept them, eventually producing samples that follow the target posterior.</p>
                     </div>
@@ -346,7 +346,7 @@
                     <div class="subsection">
                         <span class="subsection-title">Bayesian Test Statistic (T-Stat)</span>
                         
-                        <p>In Bayesian posterior predictive checks (PPCs), the "T" in diagrams (often labeled as T(y) or similar) isn't usually the Student's t-test; it’s a placeholder for "Test Statistic." It refers to any metric you choose to stress-test your model.</p>
+                        <p>In Bayesian posterior predictive checks (PPCs) the "Test Statistic" refers to any metric you choose to stress-test your model.</p>
                         <p>You define the test statistic based on what you suspect the model is missing.<br>
                         
                     </div>
@@ -355,10 +355,32 @@
                         
                         <p>p_B is simply the proportion of simulations where T_sim > T_obs.</p>
                         <p>An ideal p_B is ≈0.5, meaning the real data sits comfortably in the middle of the model's predictions. Values near 0 or 1 indicate systematic bias.</p>
+                        <p>The Bayesian P-value is the probability that the simulated statistic is greater than the observed statistic.</p>
+                        
+                        <hr style="opacity: 0.3; margin: 10px 0;">
+                        
+                        <p><strong>Calculation Process:</strong></p>
+                        <ol style="margin-top: 5px; padding-left: 20px;">
+                            <li>
+                                <strong>Calculate Observed T:</strong> Calculate the test statistic <em>T</em> once for the real observed data: <em>T(y_obs)</em><br>
+                                <span style="opacity: 0.8; font-size: 0.9em;">(e.g., the standard deviation of the real data is 15.2).</span>
+                            </li>
+                            <li style="margin-top: 8px;">
+                                <strong>Simulate Data:</strong> Generate 1,000 simulated datasets (<em>y_rep</em>) from the model.
+                            </li>
+                            <li style="margin-top: 8px;">
+                                <strong>Calculate Simulated T:</strong> Calculate the same test statistic <em>T</em> for each of the 1,000 simulated datasets: <em>T(y_rep)</em><br>
+                                <span style="opacity: 0.8; font-size: 0.9em;">(e.g., 14.1, 15.9, 13.8, 16.0, etc.).</span>
+                            </li>
+                            <li style="margin-top: 8px;">
+                                <strong>Compute Proportion:</strong> The Bayesian p-value (<em>p_B</em>) is the proportion (or percentage) of the 1,000 simulated <em>T(y_rep)</em> values that are greater than the observed <em>T(y_obs)</em>.
+                            </li>
+                        </ol>
                     </div>
                 </div>
             </details>
-
+        </div>
+    </details>
             <!-- SECTION 6 -->
             <details class="section">
                 <summary>2. Convergence: R-Hat, ESS, MCSE</summary>
