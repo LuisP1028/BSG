@@ -261,39 +261,25 @@
                 </div>
             </details>
 
-            <!-- SECTION 2 -->
-            <details class="section">
-                <summary>2. MCMC & Metropolis Hastings</summary>
-                <div class="section-content">
-                    <div class="subsection">
-                        <span class="subsection-title">Markov Chain Monte Carlo (MCMC)</span>
-                        <p> MCMC approximates parameter specifications, it builds a chain of samples that maps the posterior distribution's shape and uncertainty
-                            .</p>
-                        <p>It builds a Markov chain: starting from an initial point, it repeatedly proposes new "guesses" from a proposal distribution and decides whether to accept them, eventually producing samples that follow the target posterior.</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Metropolis Hastings [ACCEPTING/REJECTING SAMPLES]</span>
-                        <p><strong>1. The Current Stance:</strong> The algorithm is currently standing at a specific parameter value (let's call it Point A). It knows the "elevation" of this point by calculating the posterior density (Likelihood x Prior).</p>
-                        <p><strong>2. The Proposal (The "What if?"):</strong> The algorithm blindly suggests a new spot nearby, usually by picking a random coordinate close to Point A. Let's call this Point B.</p>
-                        <p><strong>3. The Comparison:</strong> It compares the elevation of Point B to Point A.</p>
-                        <ul>
-                            <li><strong>Case 1: Point B is higher (More Probable).</strong> If the posterior density at B is higher than at A, the move is a no-brainer. The algorithm Accepts immediately and moves to Point B.</li>
-                            <li><strong>Case 2: Point B is lower (Less Probable).</strong> This is the genius part. It doesn't automatically reject the move. Instead, it calculates the ratio of the heights. If Point B is 70% as high as Point A, the algorithm rolls a virtual 10-sided die.
-                                <ul>
-                                    <li>If the roll is 7 or lower (70% chance), it Accepts and moves to the lower ground anyway.</li>
-                                    <li>If the roll is 8, 9, or 10, it Rejects the move and stays at Point A.</li>
-                                </ul>
-                            </li>
-                        </ul>
-                        <p><strong>4. Recording the Sample:</strong></p>
-                        <ul>
-                            <li>If it Accepted: Point B becomes the new current position, and Point B is added to the list of samples.</li>
-                            <li>If it Rejected: The hiker stays at Point A, and Point A is added to the list of samples again.</li>
-                        </ul>
-                        <p><strong>Why accept "worse" spots?</strong> If the hiker only ever moved uphill, they would get stuck on the top of the first small hill they found (a local maximum) and never discover the Mount Everest (global maximum) across the valley. By occasionally accepting downhill moves, the algorithm ensures it can traverse the valleys to find the true peaks of the posterior distribution.</p>
-                    </div>
-                </div>
-            </details>
+         <!-- SECTION 2 -->
+<details class="section">
+    <summary>2. MCMC & Metropolis Hastings</summary>
+    <div class="section-content">
+        <div class="subsection">
+            <span class="subsection-title">Markov Chain Monte Carlo (MCMC)</span>
+            <p>MCMC approximates the posterior by building a chain of samples. It iteratively proposes and accepts guesses to map the distribution's shape</p>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">Metropolis Hastings [ACCEPTING/REJECTING SAMPLES]</span>
+            <p>Metropolis-Hastings acts like an explorer mapping a probability landscape. From its current spot (Point A), it suggests a random nearby step (Point B) and compares their posterior densities.</p>
+            <ul>
+                <li><strong>The Uphill Move:</strong> If Point B has a higher density (more probable), the algorithm always accepts and moves there.</li>
+                <li><strong>The Downhill Gamble:</strong> If Point B is lower, it doesn't automatically reject it. Instead, it accepts the move with a probability based on the ratio of the two heights (e.g., if B is 70% as high as A, there is a 70% chance to move).</li>
+                <li><strong>The Outcome:</strong> If accepted, B becomes the next sample; if rejected, it stays put and records A again. This willingness to occasionally step "downhill" prevents the algorithm from getting stuck on local peaks, ensuring it traverses valleys to fully map the distribution's true shape.</li>
+            </ul>
+        </div>
+    </div>
+</details>
 
 
 
@@ -624,10 +610,7 @@
                         [[[ 𝐅ₜ 𝐗ₜ₋₁ + 𝛈ₜ<br>
                         The product of the transition matrix [𝐅ₜ] and the previous values of the state vector [𝐗ₜ₋₁] is used to ensure the transformation rules are being enforced. ]]]<br>
                         ▬ι𓆃<br>
-                        • The Matrix-Vector Product (𝐅ₜ 𝐗ₜ₋₁): This operation functions as a "mixing board." <br>
-                        Consider a simple physics example where the state vector contains [Position, Velocity].<br>
-                        The transition matrix [𝐅ₜ ]contains the "rules"<br>
-                        
+                                              
                         
                         <p><strong>2. The Observation Projection: Translation and Selection</strong><br>
                         [[[ 𝐇ₜ 𝐗ₜ<br>
@@ -635,20 +618,13 @@
                         By performing the multiplication, you are essentially saying:<br>
                         "Take the reality of the past (𝐗ₜ₋₁) and force it through the logic of my physics engine (𝐅ₜ) to calculate where it must be now."<br>
                         ▬ι𓆃<br>
-                        * The State Vector (𝐗ₜ) is the "Hidden Truth." It contains every detail the system tracks to function mathematically (e.g., [Position, Velocity, Acceleration]).<br>
-                        * The Observation Matrix (𝐇ₜ) is the "Selector." It tells the equation which parts of that truth the sensor can actually see.</p>
-
+                        
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Generative Process of the Linear Gaussian State Space Model (SSM)</span>
                         <p>The generative process asks, "If the system works like this, what kind of data would it produce?"</p>
-                        <p><strong>1. The Notation</strong><br>
-                        <br>
-                        ∼ (Tilde): "Is sampled from" or "follows the distribution of." When we say 𝐗 ∼ 𝒩, we mean 𝐗 is a random variable generated by a Normal distribution.<br>
-                        ∣ (Pipe): "Given." This indicates conditional probability. 𝑝(𝐗ₜ∣𝐗ₜ₋₁) asks: "What is the probability of the current state (𝐗ₜ), given that we already know the previous state (𝐗ₜ₋₁)?"<br>
-                        ≡ (Triple Bar): "Is defined as" or "is equivalent to." This symbol links the abstract concept (the probability 𝑝) to the specific mathematical implementation (the Normal distribution 𝒩).<br>
-                        𝒩(𝝁, Σ) (Script N): Represents the Normal (Gaussian) Distribution. It requires two arguments: the Mean (𝝁, the center/peak) and the Covariance (Σ, the width/spread).</p>
-                        <p><strong>2. Equation 1: The Physics (Process Model)</strong><br>
+                        
+                        <p><strong>1. Equation 1: The Physics (Process Model)</strong><br>
                         <span class="code-block">𝐗ₜ ∼ 𝒩(𝐅ₜ 𝐗ₜ₋₁, 𝐐ₜ)</span><br>
                         This equation says: "The State at time 𝑡 is a random draw from a Bell Curve."</p>
                         <p>A. Why is the Mean 𝐅ₜ 𝐗ₜ₋₁?<br>
@@ -659,7 +635,7 @@
                         <p>B. Why is 𝐐ₜ the Sigma (Covariance)?<br>
                         In a standard bell curve, Sigma (σ) defines the width. In this vector equation, 𝐐ₜ is the Covariance Matrix.<br>
                         This represents the "Process Noise." It accounts for external realities the physics engine ignored (wind gusts, wheel slips).</p>
-                        <p><strong>3. Equation 2: The Sensor (Observation Model)</strong><br>
+                        <p><strong>2. Equation 2: The Sensor (Observation Model)</strong><br>
                         <span class="code-block">𝐘ₜ ∼ 𝒩(𝐇ₜ 𝐗ₜ, 𝐑ₜ)</span><br>
                         This equation says: "The Data reading at time 𝑡 is a random draw from a Bell Curve centered around the truth."</p>
                         <p>A. Why is the Mean 𝐇ₜ 𝐗ₜ?<br>
@@ -669,10 +645,10 @@
                         <p>B. Why is 𝐑ₜ the Sigma (Covariance)?<br>
                         𝐑ₜ represents Measurement Noise.<br>
                         This defines the quality of your hardware. A cheap sensor has a high 𝐑 (wide spread, fuzzy data). An expensive, precision sensor has a low 𝐑 (narrow spread, sharp data).</p>
-                        <p><strong>4. Summary of Interactions</strong><br>
-                        This system allows the Kalman Filter to mathematically weigh two competing uncertainties:<br>
-                        The Physics Uncertainty (𝐐ₜ): "How much do I trust my prediction?"<br>
-                        The Sensor Uncertainty (𝐑ₜ): "How much do I trust my data?"<br>
+                        <p><strong>3. Summary of Interactions</strong><br>
+                        Kalman Filter mathematically weighs two competing uncertainties:<br>
+                        The Physics Uncertainty [unobservable state] (𝐐ₜ): "How much do I trust my prediction?"<br>
+                        The Sensor Uncertainty [observable data] (𝐑ₜ): "How much do I trust my data?"<br>
                         If 𝐐 is large and 𝐑 is small: The math "trusts" the data. The bell curve is wide for the prediction but narrow for the measurement, so the final estimate snaps to the measurement.<br>
                         If 𝐐 is small and 𝐑 is large: The math "trusts" the physics. The data is too noisy, so the filter ignores the data and sticks to the trajectory calculated by 𝐅ₜ 𝐗ₜ₋₁.</p>
                     </div>
