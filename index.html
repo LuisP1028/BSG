@@ -364,57 +364,60 @@
         </div>
     </div>
 </details>
-            <!-- SECTION 6 -->
-            <details class="section">
-                <summary>2. Convergence: R-Hat, ESS, MCSE</summary>
-                <div class="section-content">
-                    <div class="subsection">
-                        <span class="subsection-title">1. R Hat: Convergence Factor [Gelman-Rubin]</span>
-                        <p>MCMC methods have theoretical guarantees of correctness regardless of starting point, but only for infinite samples. In practice, we need ways to assess convergence for finite samples.</p>
-                        <p>ˆR compares the spread between different chains to the spread within them. If ˆR > 1.01, your chains are effectively "disagreeing" or haven't mixed yet — the simulation isn't finished, so don't trust the results.</p>
-                        <p><strong>2. ESS (Effective Sample Size)</strong><br>
-                        Check this second to measure precision.<br>
-                        Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">2. EFFECTIVE SAMPLE SIZE (ESS)</span>
-                        <p>You use MCMC samples' statistical properties to find the ESS.</p>
-                        <p><strong>The Calculation Steps</strong><br>
-                        Since the true autocorrelations ρ_k are unknown, they are estimated from the samples themselves:</p>
-                        <p>1. Generate Samples<br>
-                        Run your MCMC algorithm</p>
-                        <p>2. Calculate Autocorrelation<br>
-                        Compute the empirical autocorrelation ρ̂_k for different lags k = 1, 2, 3, </p>
-                        <p>3. Sum the Correlations (Truncation)<br>
-                        <p>Standard software (like Stan, ArviZ, or R's coda) truncates the sum when the autocorrelation drops below a certain threshold. This step is crucial to filter out noise.</p>
-                        <p>4. Final Division<br>
-                        Divide the total number of samples N by this summed quantity (τ) to obtain the effective sample size.</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">3. MCSE (Monte Carlo Standard Error)</span>
-                        <p>MCSE is the "simulation noise"—the error introduced by using an approximate algorithm instead of exact math.</p>
-                        <p>It’s calculated as:<br>
-                        MCSE = SD / √ESS<br>
-                        Where SD is the posterior standard deviation and ESS is the effective sample size.</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">MCMC Workflow Summary</span>
-                        <p>1. ˆR (Gelman-Rubin statistic)<br>
-                        Confirms chains have mixed (validity). Check if ˆR ≈ 1 (ˆR ≤ 1.01 is safe).</p>
-                        <p>2. ESS (Effective Sample Size)<br>
-                        Measures the volume of independent information (quantity). Aim for ESS >400 or >1000 per chain for stable estimates.</p>
-                        <p>3. MCSE (Monte Carlo Standard Error)<br>
-                        Uses ESS to assess if your estimate is precise enough for your scientific question (quality).</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Trace Plot: Monitoring Convergence at a glance</span>
-                        <p>"Fuzzy caterpillar" is a great rule of thumb, but not fail-safe. It implies mixing, but watch for:<br>
-                        1. Sticking: Subtle "flat shelves" mean the sampler froze.<br>
-                        2. Local Traps: A chain can look stable while stuck in one peak, missing others.</p>
-                        <p>Treat visuals as a sniff test. Always verify with R^ (to check consensus) and ESS (to check volume) to ensure the fuzz is real.</p>
-                    </div>
-                </div>
-            </details>
+<!-- SECTION 6 -->
+<details class="section">
+    <summary>2. Convergence: R-Hat, ESS, MCSE</summary>
+    <div class="section-content">
+        <div class="subsection">
+            <span class="subsection-title">1. R Hat: Convergence Factor [Gelman-Rubin]</span>
+            <p>MCMC methods have theoretical guarantees of correctness regardless of starting point, but only for infinite samples. In practice, we need ways to assess convergence for finite samples.</p>
+            <p>ˆR compares the spread between different chains to the spread within them. If ˆR > 1.01, your chains are effectively "disagreeing" or haven't mixed yet — the simulation isn't finished, so don't trust the results.</p>
+            <p><strong>2. ESS (Effective Sample Size)</strong><br>
+            Check this second to measure precision.<br>
+            Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">2. Effective Sample Size (ESS)</span>
+            <p><strong>What it is:</strong><br>
+            ESS estimates the number of independent data points your MCMC chain is equivalent to. Because MCMC samples are correlated (“sticky”), 4,000 steps might only provide as much information as 800 independent draws.</p>
+            <p><strong>How it is computed:</strong><br>
+            It penalizes the total sample count (N) based on autocorrelation.</p>
+            <p>1. Measure Stickiness: Calculate the correlation between samples at various lags (ρ̂_k).</p>
+            <p>2. Sum & Divide: Sum the positive correlations to find the “inefficiency factor,” then divide the total count by it.</p>
+            <p>ESS = N / Sum of Autocorrelations</p>
+            <p>High correlation → High inefficiency → Low ESS.</p>
+            <p><strong>Why it is helpful:</strong><br>
+            It measures precision.</p>
+            <ul>
+                <li>High ESS: Your posterior estimates (mean, intervals) are stable and accurate.</li>
+                <li>Low ESS: Your estimates are noisy and unreliable, even if the model has converged (R̂ ≈ 1).</li>
+            </ul>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">3. MCSE (Monte Carlo Standard Error)</span>
+            <p>MCSE is the "simulation noise"—the error introduced by using an approximate algorithm instead of exact math.</p>
+            <p>It’s calculated as:<br>
+            MCSE = SD / √ESS<br>
+            Where SD is the posterior standard deviation and ESS is the effective sample size.</p>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">MCMC Workflow Summary</span>
+            <p>1. ˆR (Gelman-Rubin statistic)<br>
+            Confirms chains have mixed (validity). Check if ˆR ≈ 1 (ˆR ≤ 1.01 is safe).</p>
+            <p>2. ESS (Effective Sample Size)<br>
+            Measures the volume of independent information (quantity). Aim for ESS >400 or >1000 per chain for stable estimates.</p>
+            <p>3. MCSE (Monte Carlo Standard Error)<br>
+            Uses ESS to assess if your estimate is precise enough for your scientific question (quality).</p>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">Trace Plot: Monitoring Convergence at a glance</span>
+            <p>"Fuzzy caterpillar" is a great rule of thumb, but not fail-safe. It implies mixing, but watch for:<br>
+            1. Sticking: Subtle "flat shelves" mean the sampler froze.<br>
+            2. Local Traps: A chain can look stable while stuck in one peak, missing others.</p>
+            <p>Treat visuals as a sniff test. Always verify with R^ (to check consensus) and ESS (to check volume) to ensure the fuzz is real.</p>
+        </div>
+    </div>
+</details>
 
             <!-- SECTION 7 -->
             <details class="section">
