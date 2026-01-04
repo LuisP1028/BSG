@@ -372,12 +372,12 @@
             <span class="subsection-title">1. R Hat: Convergence Factor [Gelman-Rubin]</span>
             <p>MCMC methods have theoretical guarantees of correctness regardless of starting point, but only for infinite samples. In practice, we need ways to assess convergence for finite samples.</p>
             <p>ˆR compares the spread between different chains to the spread within them. If ˆR > 1.01, your chains are effectively "disagreeing" or haven't mixed yet — the simulation isn't finished, so don't trust the results.</p>
-            <p><strong>2. ESS (Effective Sample Size)</strong><br>
-            Check this second to measure precision.<br>
-            Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
+            
         </div>
         <div class="subsection">
             <span class="subsection-title">2. Effective Sample Size (ESS)</span>
+            <p>Check this second to measure precision.</p>
+            <p>Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
             <p><strong>What it is:</strong><br>
             ESS estimates the number of independent data points your MCMC chain is equivalent to. Because MCMC samples are correlated (“sticky”), 4,000 steps might only provide as much information as 800 independent draws.</p>
             <p><strong>How it is computed:</strong><br>
