@@ -571,9 +571,8 @@
                         Predict (The Physics): Even without signal, the GPS assumes you are still moving forward at 60mph. It uses the previous state (𝐱ₜ₋₁) to predict the current state (𝐱ₜ).<br>
                         Update (The Correction): Suddenly, you exit the tunnel and the satellite gets a ping (𝐲ₜ). The ping says you are 10 meters back from where the model guessed.<br>
                         Filter: The model combines its guess with the new data. If the satellite signal is usually noisy/unreliable, it trusts the guess more. If the signal is precise, it trusts the data more. The result is the Filtered Estimate.</p>
-                        <p><strong>What is the "Marginal Distribution"?</strong><br>
-                        This answers the question: "Where are we right now?"<br>
-                        <p><strong>When to use it?</strong><br>
+                        
+                        <p><strong>When to the marginal distribution:</strong><br>
                         You use this whenever you need to estimate a variable that is dynamic (changing) and indirectly observed (noisy).<br>
                         Robotics/GPS: Your phone uses this (often a Kalman Filter). The GPS sensor is accurate to ~10m, but your blue dot on maps moves smoothly. That smooth movement is the hidden state 𝐱 being filtered from the noisy GPS data 𝐲.<br>
                         Finance: You observe stock prices (𝐲), but you want to trade based on "market volatility" (𝐱). Volatility isn't a number you can download; you must infer it from the price swings.</p>
@@ -581,7 +580,6 @@
                     <div class="subsection">
                         <span class="subsection-title">2. SMOOTHING</span>
                         <p>You aren't predicting tomorrow; you are refining the history.<br>
-                        Smoothing is the "hindsight" engine. While Filtering is about knowing where you are now based on the past, Smoothing is about figuring out where you were yesterday, knowing what you know today.<br>
                         It computes the probability of a past state 𝐱ₖ using the entire dataset 𝐲₀:ₜ—meaning it uses observations from before, during, and after the specific moment you are analyzing.</p>
                         <p><strong>What does it do?</strong><br>
                         It refines the history. Because it has access to "future" data (relative to the state 𝐱ₖ being estimated), it eliminates false moves and noise that the Filter fell for in real-time.<br>
