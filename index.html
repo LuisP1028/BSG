@@ -395,10 +395,26 @@
         </div>
         <div class="subsection">
             <span class="subsection-title">3. MCSE (Monte Carlo Standard Error)</span>
-            <p>MCSE is the "simulation noise"—the error introduced by using an approximate algorithm instead of exact math.</p>
-            <p>It’s calculated as:<br>
-            MCSE = SD / √ESS<br>
-            Where SD is the posterior standard deviation and ESS is the effective sample size.</p>
+            <p><strong>What it is:</strong><br>
+            MCSE measures "simulation noise." Because MCMC finds answers by random sampling rather than solving an exact equation, the result wobbles slightly if you run the code again. MCSE quantifies this computational error.</p>
+            
+            <p><strong>The Calculation:</strong></p>
+            <div style="font-family: 'Times New Roman', serif; font-size: 1.1em; margin: 15px 0; display: flex; align-items: center; gap: 10px;">
+                <span>MCSE = </span>
+                <div style="display: inline-block; vertical-align: middle; text-align: center;">
+                    <div style="border-bottom: 1px solid currentColor; padding-bottom: 2px;">Posterior SD</div>
+                    <div style="padding-top: 2px;">&radic;<span style="text-decoration: overline;">ESS</span></div>
+                </div>
+            </div>
+
+            <p>It compares the simulation noise to the <strong>Posterior Standard Deviation (SD)</strong>. The Posterior SD represents the actual uncertainty in your result based on the evidence (the spread of plausible values).</p>
+
+            <p><strong>How it assesses Quality:</strong><br>
+            It determines if your estimate is stable enough to trust.</p>
+
+            <p><strong>The Logic:</strong> Higher ESS (more info) reduces MCSE (less wobble).</p>
+
+            <p><strong>The Quality Check:</strong> You want the MCSE to be tiny compared to the Posterior SD. This ensures the uncertainty you report comes from your data, not just the computer's random variation.</p>
         </div>
         <div class="subsection">
             <span class="subsection-title">MCMC Workflow Summary</span>
