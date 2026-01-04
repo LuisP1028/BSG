@@ -588,9 +588,8 @@
                         
                         <p><strong>When to use it?</strong><br>
                         You use Smoothing for retrospective analysis or offline processing, where you have recorded data and need the highest accuracy possible, not real-time responsiveness.<br>
-                        * Climate Science: Reconstructing past temperatures (𝐱) using ice cores and tree rings (𝐲). You aren't predicting tomorrow; you are refining the history of the last 100 years.<br>
-                        * Economics: Dating the start and end of a recession. It is essentially impossible to know you are in a recession the day it starts (Filtering), but extremely easy to pinpoint the start date two years later (Smoothing).<br>
-                        * Training Models: When teaching a computer to understand a dynamic system (Parameter Learning), you use smoothed estimates to train it on "what actually happened."</p>
+                        * Climate Science: Reconstructing past temperatures (𝐱) using ice cores and tree rings (𝐲). You aren't predicting tomorrow; you are refining the history of the last 100 years.<br></p>
+                        
                     </div>
                 </div>
             </details>
@@ -618,7 +617,7 @@
                     </div>
                     <div class="subsection">
                         <span class="subsection-title">Operational Interactions: The Mechanics of the Matrix</span>
-                        <p> Transition Matrix * t-1 State Vector</p>
+                        <p> 𝐅ₜ * 𝐗ₜ₋₁</p>
                         <p><strong>1. The State Update: Linear Combination and Displacement</strong><br>
                         [[[ 𝐅ₜ 𝐗ₜ₋₁ + 𝛈ₜ<br>
                         The product of the transition matrix [𝐅ₜ] and the previous values of the state vector [𝐗ₜ₋₁] is used to ensure the transformation rules are being enforced. ]]]<br>
