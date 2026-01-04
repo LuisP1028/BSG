@@ -268,6 +268,7 @@
         <div class="subsection">
             <span class="subsection-title">Markov Chain Monte Carlo (MCMC)</span>
             <p>MCMC approximates the posterior by building a chain of samples. It iteratively proposes and accepts guesses to map the distribution's shape</p>
+            <p>The posterior is a mathematical function representing your updated beliefs.</p>
         </div>
         <div class="subsection">
             <span class="subsection-title">Metropolis Hastings [ACCEPTING/REJECTING SAMPLES]</span>
@@ -281,43 +282,39 @@
     </div>
 </details>
 
-
-
-            <!-- SECTION 4 -->
-            <details class="section">
-                <summary>3. Types of Priors</summary>
-                <div class="section-content">
-                    <div class="subsection">
-                        <span class="subsection-title">Conjugate Priors</span>
-                        <p>"Same family in, same family out."</p>
-                        <p>“A prior is conjugate to a likelihood if the posterior belongs to the same family of distributions as the prior.”</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Objective Priors</span>
-                        <p>“If you do not have information about a problem, then you do not have any reason to believe one outcome is more likely than any other.”</p>
-                        <p><strong>Reparametrization:</strong> Describing the exact same system using different variables.<br>
-                        </p>
-                        <p><strong>JEFFREY’S PRIOR:</strong> Identifies sensitive parameter values. The "Gold Standard" for 1D problems (estimating one thing).<br>
-                        Invariant under reparametrization.<br>
-                        
-                        <p><strong>REFERENCE PRIORS:</strong> Maximize Kullback-Leibler Divergence; measures distance between posterior and prior distributions, with more distance being better [higher information distance]. By not encoding any bias on the prior, this lets the data speak as we collect more samples.<br>
-                        KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Maximum Entropy (MaxEnt) Priors</span>
-                        <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors. By selecting the flattest prior possible that obeys your constraints, you maximize you admitted uncertainty.</p>
-                        <p>For example, in modeling interest rates, a half-normal prevents negative values. By maximizing entropy, we allow the data to speak for itself.</p>
-                        <p><strong>LAGRANGIAN MULTIPLIERS</strong><br>
-                        <p>The math says: the probability at any point is just an exponential decay of how much that point violates your constraint(s).</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">Prior Predictive Distribution</span>
-                        <p>It’s a sanity check. You draw parameters from your prior, then simulate data from them. If this "fake" data looks impossible—like negative heights or million-degree days—you know your prior is unrealistic and needs tightening.</p>
-                    </div>
-                </div>
-            </details>
+    <!-- SECTION 4 -->
+    <details class="section">
+        <summary>3. Types of Priors</summary>
+        <div class="section-content">
+            <div class="subsection">
+                <span class="subsection-title">Conjugate Priors</span>
+                <p>"Same family in, same family out."</p>
+                
+            </div>
+            <div class="subsection">
+                <span class="subsection-title">Objective Priors</span>
+                <p>“If you do not have information about a problem, then you do not have any reason to believe one outcome is more likely than any other.”</p>
+                <p><strong>Reparametrization:</strong> Describing the exact same system using different variables.<br>
+                </p>
+                <p><strong>JEFFREY’S PRIOR:</strong> An objective prior invariant under reparametrization (consistent across units), making it the 1D "gold standard." It defines probability using Fisher Information, which measures likelihood sensitivity.<br><br>Fisher Information: It maps the "curvature" of the parameter space. It assigns more probability mass to high-sensitivity regions (where small nudges to the parameter drastically change the likelihood) and less to flat areas. This ensures the prior reflects information density rather than just scale.<br><br>
+                <p><strong>REFERENCE PRIORS:</strong> Maximize Kullback-Leibler Divergence; measures distance between posterior and prior distributions, with more distance being better [higher information distance]. By not encoding any bias on the prior, this lets the data speak as we collect more samples.<br>
+                KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)</p>
+            </div>
+            <div class="subsection">
+                <span class="subsection-title">Maximum Entropy (MaxEnt) Priors</span>
+                <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors. By selecting the flattest prior possible that obeys your constraints, you maximize you admitted uncertainty.</p>
+                <p>For example, in modeling interest rates, a half-normal prevents negative values. By maximizing entropy, we allow the data to speak for itself.</p>
+                <p><strong>LAGRANGIAN MULTIPLIERS</strong><br>
+                <p>The math says: the probability at any point is just an exponential decay of how much that point violates your constraint(s).</p>
+            </div>
+            <div class="subsection">
+                <span class="subsection-title">Prior Predictive Distribution</span>
+                <p>It’s a sanity check. You draw parameters from your prior, then simulate data from them. If this "fake" data looks impossible—like negative heights or million-degree days—you know your prior is unrealistic and needs tightening.</p>
+            </div>
         </div>
     </details>
+</div>
+</details>
 
     <!-- PART II -->
     <details class="part">
