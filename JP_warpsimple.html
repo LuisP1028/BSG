@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JEFFREY'S PRIOR // DITHERPUNK</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --term-green: #00FF00;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--term-green);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        canvas {
+            image-rendering: pixelated; /* Crucial for that crisp retro look */
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            text-shadow: 0 0 5px var(--term-green);
+            white-space: pre;
+            font-size: 14px;
+            line-height: 1.5;
+            z-index: 10;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+        
+        /* CRT Scanline Overlay via CSS */
+        #crt-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div>SYSTEM: <span id="sys-status">ONLINE</span></div>
+        <div>MODE:   <span id="mode-indicator">NAIVE (UNIFORM)</span></div>
+        <div>SPACE:  <span id="space-indicator">A: THETA (0..1)</span></div>
+        <div style="margin-top: 10px;">[CLICK TO TOGGLE PRIOR]</div>
+        <div style="margin-top: 5px;">[HOVER TO WARP]</div>
+    </div>
+
+    <div id="crt-overlay"></div>
+    <canvas id="mainCanvas"></canvas>
+
+<script>
+/**
+ * DITHERPUNK VISUALIZER: JEFFREY'S PRIOR
+ * --------------------------------------
+ * Implements a manual Atkinson Dithering pipeline on the CPU.
+ * Renders vector graphics to an offscreen buffer, processes pixels,
+ * and pushes bit-crushed noise to the display.
+ */
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+
+// Low internal resolution for chunky aesthetic
+const W = 320;
+const H = 240;
+
+// Offscreen buffer for raw vector drawing
+const bufferCanvas = document.createElement('canvas');
+bufferCanvas.width = W;
+bufferCanvas.height = H;
+const bctx = bufferCanvas.getContext('2d');
+
+// Interactive State
+let state = {
+    priorType: 'UNIFORM', // 'UNIFORM' or 'JEFFREYS'
+    warpFactor: 0.0,      // 0.0 = Space A (Theta), 1.0 = Space B (Log-Odds)
+    targetWarp: 0.0,
+    time: 0
+};
+
+// Resize handling
+function resize() {
+    // Scale canvas to fit screen while maintaining aspect ratio
+    const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+    canvas.width = W;
+    canvas.height = H;
+    canvas.style.width = `${W * scale}px`;
+    canvas.style.height = `${H * scale}px`;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Input Handling
+document.addEventListener('mousedown', () => {
+    state.priorType = state.priorType === 'UNIFORM' ? 'JEFFREYS' : 'UNIFORM';
+    updateUI();
+});
+
+document.addEventListener('mousemove', (e) => {
+    // Map X mouse position to warp factor
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    state.targetWarp = Math.max(0, Math.min(1, x));
+});
+
+// Touch support
+document.addEventListener('touchmove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches[0].clientX - rect.left) / rect.width;
+    state.targetWarp = Math.max(0, Math.min(1, x));
+}, {passive: true});
+document.addEventListener('touchstart', () => {
+    state.priorType = state.priorType === 'UNIFORM' ? 'JEFFREYS' : 'UNIFORM';
+    updateUI();
+}, {passive: true});
+
+
+function updateUI() {
+    document.getElementById('mode-indicator').innerText = 
+        state.priorType === 'UNIFORM' ? "NAIVE (UNIFORM)" : "JEFFREY'S (BETA .5,.5)";
+}
+
+// -----------------------------------------------------------------------
+// MATH FUNCTIONS
+// -----------------------------------------------------------------------
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+function logit(p) { return Math.log(p / (1 - p)); }
+
+// Jacobian: d(theta)/d(phi) = theta * (1 - theta)
+function jacobian(theta) { return theta * (1 - theta); }
+
+// Priors in Theta Space
+function p_uniform_theta(theta) { return 1.0; }
+function p_jeffreys_theta(theta) { 
+    // Beta(0.5, 0.5) ~ 1 / sqrt(theta * (1-theta))
+    // Clamped to avoid infinity for rendering
+    const v = theta * (1 - theta);
+    if (v < 0.0001) return 10.0; 
+    return 1.0 / (Math.PI * Math.sqrt(v));
+}
+
+// -----------------------------------------------------------------------
+// RENDERING PIPELINE
+// -----------------------------------------------------------------------
+
+function drawScene(ctx, t, warp) {
+    // Clear background (Black)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+
+    // Setup Grid Parameters
+    // Space A: [0, 1]
+    // Space B: [-5, 5] (Log Odds)
+    
+    const margin = 30;
+    const graphW = W - margin * 2;
+    const graphH = H - margin * 2;
+    const graphBottom = H - margin;
+    const graphLeft = margin;
+
+    // Helper to map logic coordinates to screen
+    function mapX(val, w) {
+        // If w=0 (Space A): val is theta [0,1]
+        // If w=1 (Space B): val is phi [-5, 5]
+        
+        // However, we are iterating over THETA (0..1) to draw lines.
+        // So we transform theta -> phi based on w
+        
+        const theta = val; // Input is always theta for the grid lines
+        const phi = logit(theta); // corresponding log-odds
+        
+        // Screen X for Theta mode
+        const sx_A = graphLeft + theta * graphW;
+        
+        // Screen X for Phi mode (clamp -5 to 5)
+        const phi_clamped = Math.max(-5, Math.min(5, phi));
+        const sx_B = graphLeft + ((phi_clamped + 5) / 10) * graphW;
+        
+        // Lerp
+        return sx_A + (sx_B - sx_A) * w;
+    }
+
+    function mapY(density, w) {
+        // Visual scaling factor
+        const scale = 0.6 * graphH; 
+        return graphBottom - (density * scale);
+    }
+
+    // 1. Draw Grid Lines (Vertical)
+    // These represent equal intervals in Theta space stretching apart
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#444444'; // Gray for grid, will be dithered
+    
+    for (let i = 0.1; i < 1.0; i += 0.1) {
+        const x = mapX(i, warp);
+        ctx.beginPath();
+        ctx.moveTo(x, graphBottom);
+        ctx.lineTo(x, margin);
+        ctx.stroke();
+    }
+
+    // 2. Draw The Curve
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FFFFFF'; // White (becomes Green in dither)
+
+    ctx.beginPath();
+    let first = true;
+    
+    // Resolution of curve
+    const steps = 200;
+    
+    for (let i = 0; i <= steps; i++) {
+        // Safe range 0.01 to 0.99 to avoid Infinity
+        let theta = 0.005 + (i / steps) * 0.99;
+        
+        let densityA = 0;
+        
+        if (state.priorType === 'UNIFORM') {
+            densityA = p_uniform_theta(theta);
+        } else {
+            densityA = p_jeffreys_theta(theta);
+        }
+
+        // Apply Jacobian for the warp
+        // Density_B(phi) = Density_A(theta) * |dTheta/dPhi|
+        // To animate, we interpolate the multiplier from 1 to |J|
+        
+        const J = jacobian(theta);
+        // Interpolate the Jacobian effect: 
+        // At warp 0, multiplier is 1. At warp 1, multiplier is J.
+        const currentJ = 1 + (J - 1) * warp;
+        
+        const currentDensity = densityA * currentJ;
+
+        const px = mapX(theta, warp);
+        const py = mapY(currentDensity, warp);
+
+        if (first) { ctx.moveTo(px, py); first = false; }
+        else { ctx.lineTo(px, py); }
+    }
+    ctx.stroke();
+
+    // 3. Draw Axis & Text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '10px monospace';
+    
+    // Bottom Axis
+    ctx.fillRect(graphLeft, graphBottom, graphW, 2);
+    
+    // Axis Labels
+    if (warp < 0.5) {
+        ctx.fillText("0.0", graphLeft, graphBottom + 12);
+        ctx.fillText("1.0", graphLeft + graphW - 20, graphBottom + 12);
+        ctx.fillText("θ", graphLeft + graphW / 2, graphBottom + 12);
+    } else {
+        ctx.fillText("-5", graphLeft, graphBottom + 12);
+        ctx.fillText("+5", graphLeft + graphW - 15, graphBottom + 12);
+        ctx.fillText("φ (Log-Odds)", graphLeft + graphW / 2 - 30, graphBottom + 12);
+    }
+
+    // "Data Loss" / Jacobian Visualizer
+    // Draw rectangles representing probability mass
+    // Pick a slice around 0.5 and 0.9
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    
+    const slices = [0.1, 0.5, 0.9];
+    slices.forEach(s => {
+        const widthTheta = 0.05;
+        const x1 = mapX(s - widthTheta/2, warp);
+        const x2 = mapX(s + widthTheta/2, warp);
+        
+        // Approximate height at center
+        let dA = (state.priorType === 'UNIFORM') ? p_uniform_theta(s) : p_jeffreys_theta(s);
+        let J = jacobian(s);
+        let cJ = 1 + (J - 1) * warp;
+        let h = mapY(dA * cJ, warp);
+        
+        // Draw area under curve approximation
+        // ctx.fillRect(x1, h, (x2-x1), graphBottom - h);
+    });
+}
+
+// -----------------------------------------------------------------------
+// ATKINSON DITHERING (Real-time)
+// -----------------------------------------------------------------------
+
+function ditherAndPush() {
+    // 1. Get raw pixels from buffer
+    const imageData = bctx.getImageData(0, 0, W, H);
+    const data = imageData.data;
+    const w = W;
+    const h = H;
+
+    // 2. Iterate
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            
+            // Greyscale conversion (using Green channel as main driver or average)
+            // Input is mostly black, white, or gray.
+            const oldPixel = data[i]; // R=G=B usually
+            
+            // Threshold (1-bit)
+            const newPixel = oldPixel < 128 ? 0 : 255;
+            
+            // Quantization Error
+            const quantError = oldPixel - newPixel;
+            
+            // Set pixel to Palette (Black or Green)
+            data[i]     = 0;          // R
+            data[i + 1] = newPixel;   // G (Terminal Green)
+            data[i + 2] = 0;          // B
+            
+            // Atkinson Diffusion
+            // Distribute error to neighbors (1/8th)
+            if (quantError !== 0) {
+                const distribute = (dx, dy) => {
+                    if (x + dx >= 0 && x + dx < w && y + dy >= 0 && y + dy < h) {
+                        const ni = ((y + dy) * w + (x + dx)) * 4;
+                        // We only update one channel (R, G or B) then sync them for next read
+                        // But since we read R (data[i]) at start, let's update R
+                        data[ni] += quantError >> 3; // Divide by 8
+                        data[ni+1] += quantError >> 3;
+                        data[ni+2] += quantError >> 3;
+                    }
+                };
+
+                distribute(1, 0);
+                distribute(2, 0);
+                distribute(-1, 1);
+                distribute(0, 1);
+                distribute(1, 1);
+                distribute(0, 2);
+            }
+        }
+    }
+
+    // 3. Put on Main Canvas
+    ctx.putImageData(imageData, 0, 0);
+}
+
+// -----------------------------------------------------------------------
+// MAIN LOOP
+// -----------------------------------------------------------------------
+
+function loop(timestamp) {
+    state.time = timestamp;
+
+    // Smooth warp transition
+    const ease = 0.1;
+    state.warpFactor += (state.targetWarp - state.warpFactor) * ease;
+    
+    // Update Text info
+    const uiSpace = document.getElementById('space-indicator');
+    if (state.warpFactor < 0.2) uiSpace.innerText = "SPACE A: THETA (STANDARD)";
+    else if (state.warpFactor > 0.8) uiSpace.innerText = "SPACE B: PHI (LOG-ODDS)";
+    else uiSpace.innerText = "TRANSFORMING Jacobian...";
+
+    // 1. Draw raw vector scene
+    drawScene(bctx, state.time, state.warpFactor);
+    
+    // 2. Add Scanline/Flicker artifacts to the buffer BEFORE dithering
+    // This makes the artifacts part of the dither pattern
+    const flicker = Math.random() > 0.95 ? 0.8 : 1.0;
+    
+    // 3. Process Dithering and Render to Screen
+    ditherAndPush();
+    
+    // 4. Apply global flicker to canvas context (CSS handles CRT lines)
+    canvas.style.opacity = 0.9 + Math.random() * 0.1;
+
+    requestAnimationFrame(loop);
+}
+
+// Start
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCMC // DITHERPUNK // ESS_ANALYZER</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --phosphor: #39ff14; /* Neon Green */
+            --off-phosphor: #0f2a08;
+            --border-width: 2px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--phosphor);
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Brutalist UI Container */
+        #terminal-ui {
+            border: var(--border-width) solid var(--phosphor);
+            padding: 4px;
+            width: 960px; /* 3x scale of 320 internal */
+            max-width: 95vw;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: var(--border-width) solid var(--phosphor);
+            padding: 8px 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        /* The Canvas */
+        #crt-canvas {
+            display: block;
+            width: 100%;
+            image-rendering: pixelated; /* Crucial for sharp dither pixels */
+            aspect-ratio: 4 / 3;
+            background: #000;
+        }
+
+        /* Controls */
+        #controls {
+            border-top: var(--border-width) solid var(--phosphor);
+            padding: 10px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between; /* Space out the new complex controls */
+            margin-top: 4px;
+        }
+
+        button {
+            background: var(--bg-color);
+            color: var(--phosphor);
+            border: var(--border-width) solid var(--phosphor);
+            padding: 5px 15px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.1s;
+        }
+
+        button:hover {
+            background: var(--phosphor);
+            color: var(--bg-color);
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+
+        .stat-block {
+            font-size: 0.8rem;
+            line-height: 1.2;
+            text-align: right;
+            min-width: 180px;
+        }
+
+        /* --- NEW: SLIDER STYLING --- */
+        
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            width: 180px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin-top: 8px;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        /* The Track */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 12px;
+            cursor: pointer;
+            background: var(--off-phosphor);
+            border: 1px solid var(--phosphor);
+        }
+
+        /* The Thumb (Handle) */
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 12px;
+            background: var(--phosphor);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -4px; /* Offset to center vertically */
+        }
+    </style>
+</head>
+<body>
+
+<div id="terminal-ui">
+    <header>
+        <span>SYS.MCMC.V2</span>
+        <span>ESS_METRICS//ACTIVE</span>
+        <span id="clock">00:00:00</span>
+    </header>
+
+    <!-- Visible Canvas -->
+    <canvas id="crt-canvas"></canvas>
+
+    <div id="controls">
+        <div style="display:flex; gap:10px;">
+            <button id="btn-toggle">HALT/RESUME</button>
+            <button id="btn-reset">FLUSH</button>
+        </div>
+
+        <!-- NEW: Step Size Slider -->
+        <div class="slider-container">
+            <label for="step-slider" style="font-size: 0.75rem; text-transform: uppercase;">
+                PROPOSAL_SIGMA: <span id="step-val">0.50</span>
+            </label>
+            <input type="range" id="step-slider" min="0.05" max="4.0" step="0.05" value="0.5">
+        </div>
+
+        <!-- UPDATED: Stats Block -->
+        <div class="stat-block">
+            N: <span id="sample-count">0</span> | ACC: <span id="accept-rate">0.00</span><br>
+            LAG1_R: <span id="lag-corr">0.00</span> | ESS: <span id="ess-est">0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * DITHERPUNK MCMC VISUALIZER V2
+ * --------------------------
+ * Resolution: Internal 320x240 -> Scaled via CSS
+ * Color: 1-bit logic mapped to Green/Black
+ * Updates: Step Size control & Autocorrelation/ESS estimation
+ */
+
+// --- CONFIGURATION ---
+const INTERNAL_WIDTH = 320;
+const INTERNAL_HEIGHT = 240;
+const PHOSPHOR_R = 57;
+const PHOSPHOR_G = 255;
+const PHOSPHOR_B = 20;
+
+// --- CANVAS SETUP ---
+const canvas = document.getElementById('crt-canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+// Offscreen buffer
+const bufferCanvas = document.createElement('canvas');
+bufferCanvas.width = INTERNAL_WIDTH;
+bufferCanvas.height = INTERNAL_HEIGHT;
+const bCtx = bufferCanvas.getContext('2d');
+
+canvas.width = INTERNAL_WIDTH;
+canvas.height = INTERNAL_HEIGHT;
+
+// --- STATE MANAGEMENT ---
+let isRunning = true;
+let totalSamples = 0;
+let acceptedSamples = 0;
+let animationId;
+
+// Target Distribution: Bimodal Gaussian Mixture
+const targetPDF = (x, y) => {
+    const w1 = 0.5, w2 = 0.5;
+    
+    // Gaussian 1
+    const dx1 = x - (-1.2);
+    const dy1 = y - (-0.8);
+    const g1 = Math.exp(-(dx1*dx1 + dy1*dy1) / 0.8);
+
+    // Gaussian 2
+    const dx2 = x - 1.2;
+    const dy2 = y - 1.2;
+    const g2 = Math.exp(-(dx2*dx2 + dy2*dy2) / 1.0);
+
+    return w1 * g1 + w2 * g2;
+};
+
+const mcmcState = {
+    x: 0,
+    y: 0,
+    history: [], 
+    historyLimit: 300, // Increased history to see "stickiness" in trace better
+    histogram: new Array(60).fill(0),
+    densityMap: new Float32Array(INTERNAL_WIDTH * INTERNAL_HEIGHT).fill(0),
+    
+    // NEW: Correlation tracking
+    acfBuffer: [],
+    acfLimit: 500, // Buffer size for rolling statistics
+    currentStepSize: 0.5, // Default proposal standard deviation
+
+    step: function() {
+        // Proposal: Symmetric random walk with dynamic step size
+        const proposalStep = this.currentStepSize;
+        const x_new = this.x + (Math.random() - 0.5) * proposalStep * 2;
+        const y_new = this.y + (Math.random() - 0.5) * proposalStep * 2;
+
+        const p_current = targetPDF(this.x, this.y);
+        const p_new = targetPDF(x_new, y_new);
+
+        // Acceptance Probability
+        const alpha = p_new / (p_current + 1e-9);
+
+        totalSamples++;
+
+        if (Math.random() < alpha) {
+            this.x = x_new;
+            this.y = y_new;
+            acceptedSamples++;
+        }
+
+        // Record History (Trace)
+        this.history.push({x: this.x, y: this.y});
+        if (this.history.length > this.historyLimit) {
+            this.history.shift();
+        }
+
+        // NEW: Record Stats History (for autocorrelation)
+        this.acfBuffer.push(this.x);
+        if (this.acfBuffer.length > this.acfLimit) {
+            this.acfBuffer.shift();
+        }
+
+        // Update Histogram
+        const binIdx = Math.floor(((this.x + 4) / 8) * this.histogram.length);
+        if (binIdx >= 0 && binIdx < this.histogram.length) {
+            this.histogram[binIdx]++;
+        }
+
+        // Update Density Map
+        const mapX = Math.floor(((this.x + 3) / 6) * 150) + 165; 
+        const mapY = Math.floor(((this.y + 3) / 6) * 110) + 125;
+        
+        if(mapX >= 160 && mapX < 320 && mapY >= 120 && mapY < 240) {
+            const idx = mapY * INTERNAL_WIDTH + mapX;
+            this.densityMap[idx] = Math.min(this.densityMap[idx] + 25, 255); 
+        }
+    },
+    
+    reset: function() {
+        this.x = 0;
+        this.y = 0;
+        this.history = [];
+        this.acfBuffer = [];
+        this.histogram.fill(0);
+        this.densityMap.fill(0);
+        totalSamples = 0;
+        acceptedSamples = 0;
+    },
+
+    // NEW: Calculate Lag-1 Autocorrelation (Rho) and Effective Sample Size
+    calculateStats: function() {
+        if (this.acfBuffer.length < 50) return { rho: 0, ess: 0 };
+
+        const n = this.acfBuffer.length;
+        
+        // 1. Mean
+        let sum = 0;
+        for(let v of this.acfBuffer) sum += v;
+        const mean = sum / n;
+
+        // 2. Variance & Covariance
+        let num = 0; // Covariance
+        let den = 0; // Variance
+        
+        for(let i = 0; i < n - 1; i++) {
+            let diffCurrent = this.acfBuffer[i] - mean;
+            let diffNext = this.acfBuffer[i+1] - mean;
+            
+            num += diffCurrent * diffNext;
+            den += diffCurrent * diffCurrent;
+        }
+        den += (this.acfBuffer[n-1] - mean) ** 2;
+
+        const rho = den === 0 ? 0 : num / den;
+        
+        // Approximate ESS based on AR(1) process
+        const safeRho = Math.max(-0.99, Math.min(0.99, rho));
+        const essFactor = (1 - safeRho) / (1 + safeRho);
+        const currentESS = Math.floor(totalSamples * essFactor);
+
+        return { rho: rho, ess: currentESS };
+    }
+};
+
+// --- RENDERING ROUTINES ---
+
+function drawLayout(ctx) {
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 1;
+
+    // Vertical Divider
+    ctx.beginPath();
+    ctx.moveTo(160, 0);
+    ctx.lineTo(160, 240);
+    ctx.stroke();
+
+    // Horizontal Divider
+    ctx.beginPath();
+    ctx.moveTo(160, 120);
+    ctx.lineTo(320, 120);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "10px monospace";
+    ctx.fillText("P1.POSTERIOR_APPROX", 164, 10);
+    ctx.fillText("P2.TRACE_WALK", 4, 10);
+    ctx.fillText("P3.DENSITY_MAP", 164, 130);
+}
+
+function drawPanel1(ctx) {
+    // Histogram
+    const startX = 160;
+    const startY = 0;
+    const w = 160;
+    const h = 120;
+    const padding = 10;
+    const maxCount = Math.max(...mcmcState.histogram, 1);
+    const barW = (w - 2 * padding) / mcmcState.histogram.length;
+    
+    ctx.fillStyle = "#AAAAAA"; 
+    for(let i=0; i<mcmcState.histogram.length; i++) {
+        const hBar = (mcmcState.histogram[i] / maxCount) * (h - 2*padding);
+        ctx.fillRect(startX + padding + i * barW, startY + h - padding - hBar, barW - 1, hBar);
+    }
+
+    // True Density Curve
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.beginPath();
+    for(let i=0; i <= w - 2*padding; i+=2) {
+        const xVal = ((i / (w - 2*padding)) * 8) - 4;
+        let pdfVal = targetPDF(xVal, 0) + targetPDF(xVal, 1) + targetPDF(xVal, -1);
+        const plotY = (startY + h - padding) - (pdfVal * 60); 
+        if (i===0) ctx.moveTo(startX + padding + i, plotY);
+        else ctx.lineTo(startX + padding + i, plotY);
+    }
+    ctx.stroke();
+}
+
+function drawPanel2(ctx) {
+    // 2D Walk (Top Left of Panel 2)
+    const centerX = 80;
+    const centerY = 90;
+    const scale = 30;
+
+    // Axes
+    ctx.fillStyle = "#333";
+    ctx.fillRect(centerX, 20, 1, 140);
+    ctx.fillRect(0, centerY, 160, 1);
+
+    // Walk Snake
+    ctx.beginPath();
+    for(let i=0; i<mcmcState.history.length; i++) {
+        const pt = mcmcState.history[i];
+        const px = centerX + pt.x * scale;
+        const py = centerY - pt.y * scale; 
+        const opacity = (i / mcmcState.history.length);
+        const colorVal = Math.floor(opacity * 255);
+        ctx.strokeStyle = `rgb(${colorVal},${colorVal},${colorVal})`;
+        
+        if(i > 0) {
+            const prev = mcmcState.history[i-1];
+            const prevX = centerX + prev.x * scale;
+            const prevY = centerY - prev.y * scale;
+            ctx.beginPath();
+            ctx.moveTo(prevX, prevY);
+            ctx.lineTo(px, py);
+            ctx.stroke();
+        }
+    }
+
+    // Trace (Bottom Left of Panel 2)
+    const traceH = 80;
+    const traceY = 160;
+    
+    ctx.strokeStyle = "#FFF";
+    ctx.beginPath();
+    const traceLen = mcmcState.history.length;
+    // Dynamic stepX based on history limit to fit in width 160
+    const stepX = 160 / mcmcState.historyLimit;
+    
+    for(let i=0; i<traceLen; i++) {
+        const val = mcmcState.history[i].x;
+        const px = i * stepX;
+        const py = traceY + (traceH/2) - (val * 10);
+        if (i===0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText("TRACE(X) [STICKINESS]", 4, 235);
+}
+
+function drawPanel3(ctx) {
+    const imgData = ctx.createImageData(160, 120);
+    const data = imgData.data;
+    let localIdx = 0;
+    for(let y=120; y<240; y++) {
+        for(let x=160; x<320; x++) {
+            const globalIdx = y * INTERNAL_WIDTH + x;
+            const intensity = mcmcState.densityMap[globalIdx];
+            data[localIdx] = intensity;     
+            data[localIdx+1] = intensity;   
+            data[localIdx+2] = intensity;   
+            data[localIdx+3] = 255;         
+            localIdx += 4;
+        }
+    }
+    ctx.putImageData(imgData, 160, 120);
+}
+
+// --- ATKINSON DITHERING ---
+function applyDithering(sourceCtx, targetCtx) {
+    const w = INTERNAL_WIDTH;
+    const h = INTERNAL_HEIGHT;
+    const imgData = sourceCtx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            const oldPixel = data[i]; 
+            const newPixel = oldPixel < 128 ? 0 : 255;
+            const quantError = oldPixel - newPixel;
+            
+            if (newPixel === 255) {
+                data[i]     = PHOSPHOR_R;
+                data[i + 1] = PHOSPHOR_G;
+                data[i + 2] = PHOSPHOR_B;
+            } else {
+                data[i]     = 5;  
+                data[i + 1] = 10;
+                data[i + 2] = 5;
+            }
+            
+            const distribute = (dx, dy, fraction) => {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                    const ni = (ny * w + nx) * 4;
+                    const val = data[ni] + (quantError * fraction);
+                    data[ni] = val;
+                    data[ni+1] = val;
+                    data[ni+2] = val;
+                }
+            };
+            
+            distribute(1, 0, 1/8);
+            distribute(2, 0, 1/8);
+            distribute(-1, 1, 1/8);
+            distribute(0, 1, 1/8);
+            distribute(1, 1, 1/8);
+            distribute(0, 2, 1/8);
+        }
+    }
+    targetCtx.putImageData(imgData, 0, 0);
+}
+
+// --- MAIN LOOP ---
+
+function loop() {
+    if(!isRunning) {
+        animationId = requestAnimationFrame(loop);
+        return;
+    }
+
+    // 1. Simulation Steps
+    for(let i=0; i<15; i++) {
+        mcmcState.step();
+    }
+
+    // 2. Buffer Draw
+    drawLayout(bCtx);
+    drawPanel1(bCtx);
+    drawPanel2(bCtx);
+    drawPanel3(bCtx);
+
+    // 3. Dither to Screen
+    applyDithering(bCtx, ctx);
+
+    // 4. Update UI & Stats
+    // Calculate stats once per frame, not every step
+    const stats = mcmcState.calculateStats();
+
+    document.getElementById('sample-count').innerText = totalSamples;
+    
+    // Accept Rate
+    const rate = totalSamples > 0 ? (acceptedSamples / totalSamples).toFixed(2) : "0.00";
+    document.getElementById('accept-rate').innerText = rate;
+    
+    // Autocorrelation & ESS
+    const rhoEl = document.getElementById('lag-corr');
+    rhoEl.innerText = stats.rho.toFixed(2);
+    
+    // Visual warning for high correlation (Bad mixing)
+    if(stats.rho > 0.8 || stats.rho < -0.8) {
+        rhoEl.style.color = "#ff3914"; // Red for danger
+        rhoEl.style.textShadow = "0px 0px 2px red";
+    } else {
+        rhoEl.style.color = "var(--phosphor)";
+        rhoEl.style.textShadow = "none";
+    }
+
+    document.getElementById('ess-est').innerText = stats.ess;
+    
+    const now = new Date();
+    document.getElementById('clock').innerText = now.toLocaleTimeString();
+
+    animationId = requestAnimationFrame(loop);
+}
+
+// --- CONTROLS ---
+
+document.getElementById('btn-toggle').addEventListener('click', () => {
+    isRunning = !isRunning;
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+    mcmcState.reset();
+    bCtx.fillStyle = "black";
+    bCtx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+});
+
+// Slider Control
+const stepSlider = document.getElementById('step-slider');
+const stepDisplay = document.getElementById('step-val');
+
+stepSlider.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    mcmcState.currentStepSize = val;
+    stepDisplay.innerText = val.toFixed(2);
+});
+
+// Start
+loop();
+
+</script>
+</body>
+</html>
