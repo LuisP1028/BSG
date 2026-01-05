@@ -399,9 +399,22 @@
                         </svg>
                     </button>
                     <!-- END BUTTON -->It maps the "curvature" of the parameter space. It assigns more probability mass to high-sensitivity regions (where small nudges to the parameter drastically change the likelihood) and less to flat areas. This ensures the prior reflects information density rather than just scale.<br><br>
-                <p><strong>REFERENCE PRIORS:</strong> Maximize Kullback-Leibler Divergence; measures distance between posterior and prior distributions, with more distance being better [higher information distance]. By not encoding any bias on the prior, this lets the data speak as we collect more samples.<br>
-                KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)</p>
-            </div>
+                    <p>
+                        <strong>REFERENCE PRIORS:</strong>
+                        
+                        <!-- BUTTON START -->
+                        <button class="eye-btn" onclick="openViewport('KL_Divergence.html', 'KL DIVERGENCE METRIC')" title="Visualize KL Divergence">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
+                            </svg>
+                        </button>
+                        <!-- BUTTON END -->
+                    
+                        Maximize Kullback-Leibler Divergence; measures distance between posterior and prior distributions, with more distance being better [higher information distance]. By not encoding any bias on the prior, this lets the data speak as we collect more samples.<br>
+                        KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)
+                    </p>
+                    </div>
             <div class="subsection">
                 <span class="subsection-title">Maximum Entropy (MaxEnt) Priors</span>
                 <p>When we aren't totally clueless about a parameter's plausible values, we can use Maximum Entropy (MaxEnt) priors. By selecting the flattest prior possible that obeys your constraints, you maximize you admitted uncertainty.</p>
