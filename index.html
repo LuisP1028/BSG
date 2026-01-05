@@ -348,17 +348,39 @@
                 </div>
             </details>
 
-         <!-- SECTION 2 -->
+<!-- SECTION 2 -->
 <details class="section">
     <summary>2. MCMC & Metropolis Hastings</summary>
     <div class="section-content">
         <div class="subsection">
-            <span class="subsection-title">Markov Chain Monte Carlo (MCMC)</span>
+            <span class="subsection-title">
+                Markov Chain Monte Carlo (MCMC)
+
+                <!-- BUTTON START -->
+                <button class="eye-btn" onclick="openViewport('metro_ess.html', 'MCMC VISUALIZATION')" title="Visualize MCMC">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
+                    </svg>
+                </button>
+                <!-- BUTTON END -->
+            </span>
             <p>MCMC approximates the posterior by building a chain of samples. It iteratively proposes and accepts guesses to map the posterior distribution's shape.</p>
             <p>The posterior is a mathematical function representing your updated beliefs.</p>
         </div>
         <div class="subsection">
-            <span class="subsection-title">Metropolis Hastings [ACCEPTING/REJECTING SAMPLES]</span>
+            <span class="subsection-title">
+                Metropolis Hastings [ACCEPTING/REJECTING SAMPLES]
+
+                <!-- BUTTON START -->
+                <button class="eye-btn" onclick="openViewport('metro_ess.html', 'METROPOLIS HASTINGS')" title="Visualize Metropolis-Hastings">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
+                    </svg>
+                </button>
+                <!-- BUTTON END -->
+            </span>
             <p>Metropolis-Hastings acts like an explorer mapping a probability landscape. From its current spot (Point A), it suggests a random nearby step (Point B) and compares their posterior densities.</p>
             <ul>
                 <li><strong>The Uphill Move:</strong> If Point B has a higher density (more probable), the algorithm always accepts and moves there.</li>
@@ -368,7 +390,6 @@
         </div>
     </div>
 </details>
-
     <!-- SECTION 4 -->
     <details class="section">
         <summary>3. Types of Priors</summary>
@@ -707,19 +728,15 @@
                 <!-- BUTTON END -->
             </span>
             <p>It is a rhythm of Prediction and Correction.<br></p>
-            
+            <p>Filtering is the process of estimating the true state (𝐗ₜ) by balancing a past prediction (𝐗ₜ₋₁) against a measurement (𝐲).</p>
             
            
-            <p><strong>Best illustrated with an example</strong><br>
-            Imagine you are driving into a tunnel and your GPS loses signal.<br>
-            Predict (The Physics): Even without signal, the GPS assumes you are still moving forward at 60mph. It uses the previous state (𝐱ₜ₋₁) to predict the current state (𝐱ₜ).<br>
-            Update (The Correction): Suddenly, you exit the tunnel and the satellite gets a ping (𝐲ₜ). The ping says you are 10 meters back from where the model guessed.<br>
-            Filter: The model combines its guess with the new data. If the satellite signal is usually noisy/unreliable, it trusts the guess more. If the signal is precise, it trusts the data more. The result is the Filtered Estimate.</p>
+            
             
             <p><strong>When to the marginal distribution:</strong><br>
             You use this whenever you need to estimate a variable that is dynamic (changing) and indirectly observed (noisy).<br>
             Robotics/GPS: Your phone uses this (often a Kalman Filter). The GPS sensor is accurate to ~10m, but your blue dot on maps moves smoothly. That smooth movement is the hidden state 𝐱 being filtered from the noisy GPS data 𝐲.<br>
-            Finance: You observe stock prices (𝐲), but you want to trade based on "market volatility" (𝐱). Volatility isn't a number you can download; you must infer it from the price swings.</p>
+            </p>
         </div>
         <div class="subsection">
             <span class="subsection-title">
@@ -736,8 +753,7 @@
             </span>
             <p>You aren't predicting tomorrow; you are refining the history.<br>
             It computes the probability of a past state 𝐱ₖ using the entire dataset 𝐲₀:ₜ—meaning it uses observations from before, during, and after the specific moment you are analyzing.</p>
-            <p><strong>What does it do?</strong><br>
-            It refines the history. Because it has access to "future" data (relative to the state 𝐱ₖ being estimated), it eliminates false moves and noise that the Filter fell for in real-time.<br></p>
+            
             
             
             
@@ -800,8 +816,8 @@
                         If we lived in a perfect universe with no wind, friction, or entropy, the state would be exactly 𝐅ₜ 𝐗ₜ₋₁.<br>
                         Therefore, we center the bell curve right on top of this physical prediction. It is our "best guess."</p>
                         <p>B. Why is 𝐐ₜ the Sigma (Covariance)?<br>
-                        In a standard bell curve, Sigma (σ) defines the width. In this vector equation, 𝐐ₜ is the Covariance Matrix.<br>
-                        This represents the "Process Noise." It accounts for external realities the physics engine ignored (wind gusts, wheel slips).</p>
+                        
+                        This represents the "Process Noise." It accounts for external realities the physics engine ignored (wind gusts, wheel slips).</p><br>
                         <p><strong>2. Equation 2: The Sensor (Observation Model)</strong><br>
                         <span class="code-block">𝐘ₜ ∼ 𝒩(𝐇ₜ 𝐗ₜ, 𝐑ₜ)</span><br>
                         This equation says: "The Data reading at time 𝑡 is a random draw from a Bell Curve centered around the truth."</p>
