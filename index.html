@@ -583,10 +583,8 @@
                         To move around this landscape, we give the sampler a physical "kick." We pair every parameter with an auxiliary momentum variable.<br>
                         Think of the mass matrix as defining the "weight" of the ball, but with a twist: you can make the ball heavy in one direction and light in another. The Mass Matrix creates the shape of the momentum distribution. </p>
                         <p>Selecting a mass matrix is how you shape the distribution of the momentum variable. Hence, bad mass matrix -> struggle to explore the landscape because the ball may slow down or speed up ineffectively.</p>
-                        <p>In practice, HMC spends a "warm-up" phase learning the shape of the valley to select the appropriate matrix:<br>
-                        • Identity Matrix: The default setting. It assumes all parameters have the exact same scale and no correlations. It often struggles with real-world data (e.g., comparing "Income" to "Age").<br>
-                        • Diagonal Matrix: The industry standard. It estimates the variance of each parameter independently. It effectively "squishes" long dimensions and stretches short ones to make the probability valley look like a round bowl.<br>
-                        • Dense Matrix: The "heavy artillery" for highly correlated parameters. If the valley runs diagonally, a Dense matrix captures the covariance and rotates the entire coordinate system, turning a tight, diagonal ravine into a perfectly aligned bowl.</p>
+                        <p>In practice, HMC spends a "warm-up" phase learning the shape of the valley to select the appropriate matrix:<br></p>
+                        
                         <p><strong>3. Simulation</strong><br>
                         The sampler trades Potential Energy for Kinetic Energy: it speeds up as it dives into high-probability valleys and slows down as it climbs low-probability hills. This allows it to explore the entire shape of the "bowl" (the posterior) rather than just sitting at the bottom.</p>
                         <p><strong>4. Acceptance (Energy Conservation)</strong><br>
