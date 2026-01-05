@@ -386,6 +386,11 @@
                 <p>
                     <strong>JEFFREY’S PRIOR:</strong> 
                     
+
+                    An objective prior invariant under reparametrization (consistent across units), making it the 1D "gold standard." It defines probability using Fisher Information, which measures likelihood sensitivity.
+                </p>
+                
+                <p>Fisher Information: 
                     <!-- EYE BUTTON INSERTED HERE -->
                     <button class="eye-btn" onclick="openViewport('FISHER.html', 'FISHER INFO // POSTERIOR ANALYSIS')" title="Visualize Fisher Info">
                         <svg viewBox="0 0 24 24">
@@ -393,12 +398,7 @@
                             <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
                         </svg>
                     </button>
-                    <!-- END BUTTON -->
-
-                    An objective prior invariant under reparametrization (consistent across units), making it the 1D "gold standard." It defines probability using Fisher Information, which measures likelihood sensitivity.
-                </p>
-                
-                <p>Fisher Information: It maps the "curvature" of the parameter space. It assigns more probability mass to high-sensitivity regions (where small nudges to the parameter drastically change the likelihood) and less to flat areas. This ensures the prior reflects information density rather than just scale.<br><br>
+                    <!-- END BUTTON -->It maps the "curvature" of the parameter space. It assigns more probability mass to high-sensitivity regions (where small nudges to the parameter drastically change the likelihood) and less to flat areas. This ensures the prior reflects information density rather than just scale.<br><br>
                 <p><strong>REFERENCE PRIORS:</strong> Maximize Kullback-Leibler Divergence; measures distance between posterior and prior distributions, with more distance being better [higher information distance]. By not encoding any bias on the prior, this lets the data speak as we collect more samples.<br>
                 KL Divergence measures the "information distance" between two distributions, P(x) (posterior) and Q(x) (prior)</p>
             </div>
