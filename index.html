@@ -611,9 +611,8 @@
                         <p><strong>STEPS</strong><br>
                         1. Hide y_i (leave it out).<br>
                         2. Train the model on the remaining n-1 points.<br>
-                        3. Score the log probability of the hidden y_i.<br>
-                        Repeat this n times (once for every point) and sum the scores.<br>
-                        This removes the "double-dipping" bias, providing a realistic measure of how well the model generalizes to new data rather than memorizing the training set.</p>
+                        3. Score the log probability of the hidden y_i.<br></p>
+            
                     </div>
                     <div class="subsection">
                         <span class="subsection-title"><strong>Pareto Shape Parameter</strong></span>
@@ -650,7 +649,7 @@
 
             <!-- SECTION 9 -->
             <details class="section">
-                <summary>1. Laplace Priors (Bayesian Lasso)</summary>
+                <summary>1. Laplace Priors and Bayesian Lasso</summary>
                 <div class="section-content">
                     <div class="subsection">
                         <span class="subsection-title">The "Skeptical" Distribution</span>
@@ -683,50 +682,72 @@
                 </div>
             </details>
 
-            <!-- SECTION 10 -->
-            <details class="section">
-                <summary>2. Statespace Modeling</summary>
-                <div class="section-content">
-                    <div class="subsection">
-                        <span class="subsection-title">State Space Modeling</span>
-                        <p>Track a system that changes over time, where you cannot measure the variables you actually care about.</p>
-                                           
-                    
-                        <p><strong>Latent State:</strong> Information not directly observable, but that can be approximated using transformed data.</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">1. FILTERING</span>
-                        <p>It is a rhythm of Prediction and Correction.<br></p>
-                        
-                        
-                       
-                        <p><strong>Best illustrated with an example</strong><br>
-                        Imagine you are driving into a tunnel and your GPS loses signal.<br>
-                        Predict (The Physics): Even without signal, the GPS assumes you are still moving forward at 60mph. It uses the previous state (𝐱ₜ₋₁) to predict the current state (𝐱ₜ).<br>
-                        Update (The Correction): Suddenly, you exit the tunnel and the satellite gets a ping (𝐲ₜ). The ping says you are 10 meters back from where the model guessed.<br>
-                        Filter: The model combines its guess with the new data. If the satellite signal is usually noisy/unreliable, it trusts the guess more. If the signal is precise, it trusts the data more. The result is the Filtered Estimate.</p>
-                        
-                        <p><strong>When to the marginal distribution:</strong><br>
-                        You use this whenever you need to estimate a variable that is dynamic (changing) and indirectly observed (noisy).<br>
-                        Robotics/GPS: Your phone uses this (often a Kalman Filter). The GPS sensor is accurate to ~10m, but your blue dot on maps moves smoothly. That smooth movement is the hidden state 𝐱 being filtered from the noisy GPS data 𝐲.<br>
-                        Finance: You observe stock prices (𝐲), but you want to trade based on "market volatility" (𝐱). Volatility isn't a number you can download; you must infer it from the price swings.</p>
-                    </div>
-                    <div class="subsection">
-                        <span class="subsection-title">2. SMOOTHING</span>
-                        <p>You aren't predicting tomorrow; you are refining the history.<br>
-                        It computes the probability of a past state 𝐱ₖ using the entire dataset 𝐲₀:ₜ—meaning it uses observations from before, during, and after the specific moment you are analyzing.</p>
-                        <p><strong>What does it do?</strong><br>
-                        It refines the history. Because it has access to "future" data (relative to the state 𝐱ₖ being estimated), it eliminates false moves and noise that the Filter fell for in real-time.<br></p>
-                        
-                        
-                        
-                        <p><strong>When to use it?</strong><br>
-                        You use Smoothing for retrospective analysis or offline processing, where you have recorded data and need the highest accuracy possible, not real-time responsiveness.<br>
-                        * Climate Science: Reconstructing past temperatures (𝐱) using ice cores and tree rings (𝐲). You aren't predicting tomorrow; you are refining the history of the last 100 years.<br></p>
-                        
-                    </div>
-                </div>
-            </details>
+         <!-- SECTION 10 -->
+<details class="section">
+    <summary>2. Statespace Modeling</summary>
+    <div class="section-content">
+        <div class="subsection">
+            <span class="subsection-title">State Space Modeling</span>
+            <p>Track a system that changes over time, where you cannot measure the variables you actually care about.</p>
+                               
+        
+            <p><strong>Latent State:</strong> Information not directly observable, but that can be approximated using transformed data.</p>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">
+                1. FILTERING
+                
+                <!-- BUTTON START -->
+                <button class="eye-btn" onclick="openViewport('smooth_filter.html', 'FILTERING DYNAMICS')" title="Visualize Filtering">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
+                    </svg>
+                </button>
+                <!-- BUTTON END -->
+            </span>
+            <p>It is a rhythm of Prediction and Correction.<br></p>
+            
+            
+           
+            <p><strong>Best illustrated with an example</strong><br>
+            Imagine you are driving into a tunnel and your GPS loses signal.<br>
+            Predict (The Physics): Even without signal, the GPS assumes you are still moving forward at 60mph. It uses the previous state (𝐱ₜ₋₁) to predict the current state (𝐱ₜ).<br>
+            Update (The Correction): Suddenly, you exit the tunnel and the satellite gets a ping (𝐲ₜ). The ping says you are 10 meters back from where the model guessed.<br>
+            Filter: The model combines its guess with the new data. If the satellite signal is usually noisy/unreliable, it trusts the guess more. If the signal is precise, it trusts the data more. The result is the Filtered Estimate.</p>
+            
+            <p><strong>When to the marginal distribution:</strong><br>
+            You use this whenever you need to estimate a variable that is dynamic (changing) and indirectly observed (noisy).<br>
+            Robotics/GPS: Your phone uses this (often a Kalman Filter). The GPS sensor is accurate to ~10m, but your blue dot on maps moves smoothly. That smooth movement is the hidden state 𝐱 being filtered from the noisy GPS data 𝐲.<br>
+            Finance: You observe stock prices (𝐲), but you want to trade based on "market volatility" (𝐱). Volatility isn't a number you can download; you must infer it from the price swings.</p>
+        </div>
+        <div class="subsection">
+            <span class="subsection-title">
+                2. SMOOTHING
+
+                <!-- BUTTON START -->
+                <button class="eye-btn" onclick="openViewport('smooth_filter.html', 'SMOOTHING DYNAMICS')" title="Visualize Smoothing">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
+                    </svg>
+                </button>
+                <!-- BUTTON END -->
+            </span>
+            <p>You aren't predicting tomorrow; you are refining the history.<br>
+            It computes the probability of a past state 𝐱ₖ using the entire dataset 𝐲₀:ₜ—meaning it uses observations from before, during, and after the specific moment you are analyzing.</p>
+            <p><strong>What does it do?</strong><br>
+            It refines the history. Because it has access to "future" data (relative to the state 𝐱ₖ being estimated), it eliminates false moves and noise that the Filter fell for in real-time.<br></p>
+            
+            
+            
+            <p><strong>When to use it?</strong><br>
+            You use Smoothing for retrospective analysis or offline processing, where you have recorded data and need the highest accuracy possible, not real-time responsiveness.<br>
+            * Climate Science: Reconstructing past temperatures (𝐱) using ice cores and tree rings (𝐲). You aren't predicting tomorrow; you are refining the history of the last 100 years.<br></p>
+            
+        </div>
+    </div>
+</details>
 
             <!-- SECTION 11 -->
             <details class="section">
