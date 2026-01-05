@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FISHER INFO // POSTERIOR ANALYSIS</title>
+<style>
+    :root {
+        --bg: #000000;
+        --fg-green: #00FF00;
+        --fg-cyan: #00FFFF;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg);
+        color: var(--fg-green);
+        font-family: 'Courier New', Courier, monospace;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    canvas {
+        image-rendering: pixelated;
+        box-shadow: 0 0 30px rgba(0, 255, 0, 0.1);
+    }
+    #crt-flicker {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 10;
+        opacity: 0.6;
+    }
+</style>
+</head>
+<body>
+
+<div id="crt-flicker"></div>
+<canvas id="display"></canvas>
+
+<script>
+/**
+ * FISHER INFORMATION & POSTERIOR VISUALIZER
+ * 
+ * Updates:
+ * 1. Slower ghost fade.
+ * 2. Posterior calculation overlay (Cyan).
+ * 3. Uniform Prior comparison line (Dashed).
+ * 4. Multi-color Atkinson Dithering (Green/Cyan).
+ */
+
+const canvas = document.getElementById('display');
+const ctx = canvas.getContext('2d');
+
+const W = 320; 
+const H = 400; // Increased height for better spacing
+
+canvas.width = W;
+canvas.height = H;
+
+// Offscreen buffer for vector drawing
+const buffer = document.createElement('canvas');
+buffer.width = W;
+buffer.height = H;
+const bctx = buffer.getContext('2d');
+
+// --- MATH CONSTANTS & STATE ---
+
+const N_FLIPS = 50;
+let probeTheta = 0.5;
+let time = 0;
+
+// Store recent simulations
+let ghosts = []; 
+
+// --- MATHEMATICAL HELPERS ---
+
+// Log Gamma for Beta PDF
+function logGamma(z) {
+    const g = 7;
+    const p = [
+        0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+        771.32342877765313, -176.61502916214059, 12.507343278686905,
+        -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7
+    ];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
+    z -= 1;
+    let x = p[0];
+    for (let i = 1; i < g + 2; i++) x += p[i] / (z + i);
+    let t = z + g + 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+}
+
+// Likelihood P(Y|theta) normalized roughly for display
+function getLikelihoodPDF(theta, k, n) {
+    if (theta <= 0.001 || theta >= 0.999) return 0;
+    const a = k + 1;
+    const b = n - k + 1;
+    const logBeta = logGamma(a) + logGamma(b) - logGamma(a + b);
+    const logPDF = (a - 1) * Math.log(theta) + (b - 1) * Math.log(1 - theta) - logBeta;
+    return Math.exp(logPDF);
+}
+
+// Jeffreys Prior (proportional to sqrt of Fisher Info)
+function getJeffreys(theta) {
+    // Avoid infinity at 0 and 1 for rendering
+    if (theta <= 0.005 || theta >= 0.995) return 25.0; // clamp max height
+    // Fisher Info I = n / (theta(1-theta))
+    // J ~ sqrt(I)
+    return Math.sqrt(N_FLIPS / (theta * (1 - theta)));
+}
+
+// Posterior ~ Likelihood * Prior
+function getPosterior(theta, k, n) {
+    const like = getLikelihoodPDF(theta, k, n);
+    const prior = getJeffreys(theta);
+    return like * prior; 
+}
+
+// --- UPDATE LOOP ---
+
+function update() {
+    time++;
+    
+    // Move Probe (Oscillate 0 to 1)
+    probeTheta = 0.5 + 0.48 * Math.sin(time * 0.015);
+
+    // Generate Data (Coin Flips) occasionally
+    if (time % 10 === 0) { // Slower generation rate
+        let heads = 0;
+        for(let i=0; i<N_FLIPS; i++) {
+            if(Math.random() < probeTheta) heads++;
+        }
+        
+        ghosts.push({
+            k: heads,
+            life: 1.0 // Start full opacity
+        });
+    }
+
+    // Update Ghosts - SLOWER FADE
+    for (let i = ghosts.length - 1; i >= 0; i--) {
+        ghosts[i].life -= 0.005; // Was 0.02, now much slower
+        if (ghosts[i].life <= 0) {
+            ghosts.splice(i, 1);
+        }
+    }
+}
+
+// --- RENDERING (VECTOR STAGE) ---
+
+function drawVectorScene() {
+    // Clear Buffer (Black)
+    bctx.fillStyle = '#000000';
+    bctx.fillRect(0, 0, W, H);
+    
+    // Layout
+    const margin = 30;
+    const midY = H * 0.55;
+    const topH = midY - margin * 2;
+    const botY = H - margin;
+    const wGraph = W - margin * 2;
+
+    bctx.lineWidth = 1;
+    bctx.font = '10px monospace';
+
+    // --- TOP PANEL: LIKELIHOOD & POSTERIOR ---
+    
+    bctx.fillStyle = '#00FF00';
+    bctx.fillText("SIMULATION: Y ~ Bernoulli(θ)", margin, margin - 10);
+    bctx.fillText("L(θ) [Gray] vs POSTERIOR [Cyan]", margin, margin + 5);
+
+    // Axes
+    bctx.strokeStyle = '#00FF00';
+    bctx.beginPath();
+    bctx.moveTo(margin, margin);
+    bctx.lineTo(margin, margin + topH); // Y
+    bctx.lineTo(margin + wGraph, margin + topH); // X
+    bctx.stroke();
+
+    // 1. Draw Fading Likelihoods (Ghosts)
+    ghosts.forEach(g => {
+        bctx.beginPath();
+        // Gray intensity based on life
+        const intensity = Math.floor(g.life * 150); 
+        bctx.strokeStyle = `rgb(${intensity}, ${intensity}, ${intensity})`;
+        
+        let started = false;
+        for (let x = 0; x <= wGraph; x+=2) {
+            const t = x / wGraph;
+            const val = getLikelihoodPDF(t, g.k, N_FLIPS);
+            const plotY = (margin + topH) - (val * 8); // Scale
+            
+            if (!started) { bctx.moveTo(margin + x, plotY); started = true; }
+            else { bctx.lineTo(margin + x, plotY); }
+        }
+        bctx.stroke();
+    });
+
+    // 2. Draw Posterior for the NEWEST Ghost (The active data)
+    if (ghosts.length > 0) {
+        const activeG = ghosts[ghosts.length - 1];
+        
+        bctx.beginPath();
+        bctx.strokeStyle = '#00FFFF'; // CYAN for Posterior
+        bctx.lineWidth = 2;
+        bctx.setLineDash([4, 4]); // Dashed
+        
+        let started = false;
+        // Find max value to normalize height visually
+        let maxP = 0;
+        for(let t=0.01; t<0.99; t+=0.01) maxP = Math.max(maxP, getPosterior(t, activeG.k, N_FLIPS));
+        const scaleP = (topH * 0.8) / maxP; // Normalize to 80% of panel height
+
+        for (let x = 0; x <= wGraph; x+=2) {
+            const t = x / wGraph;
+            const val = getPosterior(t, activeG.k, N_FLIPS);
+            const plotY = (margin + topH) - (val * scaleP);
+            
+            if (!started) { bctx.moveTo(margin + x, plotY); started = true; }
+            else { bctx.lineTo(margin + x, plotY); }
+        }
+        bctx.stroke();
+        bctx.setLineDash([]);
+        bctx.lineWidth = 1;
+
+        // Label for Active Posterior
+        bctx.fillStyle = '#00FFFF';
+        bctx.fillText(`POSTERIOR (k=${activeG.k})`, margin + wGraph - 100, margin + 20);
+    }
+
+    // Probe Line
+    const probeX = margin + probeTheta * wGraph;
+    bctx.strokeStyle = '#FFFFFF';
+    bctx.setLineDash([2, 2]);
+    bctx.beginPath();
+    bctx.moveTo(probeX, margin);
+    bctx.lineTo(probeX, margin + topH);
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+
+    // --- BOTTOM PANEL: JEFFREYS PRIOR ---
+
+    const botStart = midY + margin;
+    const botH = (H - margin) - botStart;
+    
+    bctx.fillStyle = '#00FF00';
+    bctx.fillText("PRIOR: Jeffreys(θ) vs Uniform", margin, botStart - 10);
+
+    // Axes
+    bctx.strokeStyle = '#00FF00';
+    bctx.beginPath();
+    bctx.moveTo(margin, botStart);
+    bctx.lineTo(margin, botY);
+    bctx.lineTo(margin + wGraph, botY);
+    bctx.stroke();
+
+    // 1. Draw Uniform Prior (Dashed Line)
+    // Scale: Jeffreys min at 0.5 is sqrt(50/0.25) = sqrt(200) ~ 14.
+    // Uniform is constant. To compare shapes, we place Uniform line
+    // slightly above the minimum of Jeffreys to show the "tub" shape.
+    const jMin = getJeffreys(0.5); 
+    const scaleJ = 5; // Visual scaling
+    const uniformY = botY - (jMin * scaleJ * 1.2); // Draw Uniform slightly higher than J min
+
+    bctx.strokeStyle = '#AAAAAA';
+    bctx.setLineDash([2, 2]);
+    bctx.beginPath();
+    bctx.moveTo(margin, uniformY);
+    bctx.lineTo(margin + wGraph, uniformY);
+    bctx.stroke();
+    bctx.setLineDash([]);
+    bctx.fillStyle = '#AAAAAA';
+    bctx.fillText("Uniform Prior", margin + 5, uniformY - 4);
+
+    // 2. Draw Jeffreys Prior
+    bctx.strokeStyle = '#00FF00';
+    bctx.lineWidth = 2;
+    bctx.beginPath();
+    let first = true;
+    for (let x = 0; x <= wGraph; x++) {
+        const t = x / wGraph;
+        const val = getJeffreys(t);
+        const plotY = botY - (val * scaleJ);
+        // Clamp to panel top
+        const clampY = Math.max(botStart, plotY);
+        
+        if(first) { bctx.moveTo(margin+x, clampY); first=false; }
+        else bctx.lineTo(margin+x, clampY);
+    }
+    bctx.stroke();
+    bctx.lineWidth = 1;
+
+    // Fill Jeffreys
+    bctx.strokeStyle = '#004400';
+    bctx.beginPath();
+    for (let x = 0; x <= wGraph; x+=3) {
+        const t = x / wGraph;
+        const val = getJeffreys(t);
+        const plotY = Math.max(botStart, botY - (val * scaleJ));
+        bctx.moveTo(margin + x, botY);
+        bctx.lineTo(margin + x, plotY);
+    }
+    bctx.stroke();
+
+    // Connector Line
+    bctx.strokeStyle = '#FFFFFF';
+    bctx.setLineDash([2, 4]);
+    bctx.beginPath();
+    bctx.moveTo(probeX, margin + topH);
+    bctx.lineTo(probeX, botY);
+    bctx.stroke();
+    bctx.setLineDash([]);
+}
+
+// --- DITHERING ENGINE (Multi-Color Support) ---
+
+function applyDither() {
+    const imgData = bctx.getImageData(0, 0, W, H);
+    const d = imgData.data;
+    const w = W;
+    const h = H;
+
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            
+            // Read source
+            const r = d[i];
+            const g = d[i+1];
+            const b = d[i+2];
+            
+            // Determine Target Color (Palette Quantization)
+            // Palette: Black (0,0,0), Green (0,255,0), Cyan (0,255,255)
+            
+            let tr, tg, tb;
+            
+            // Heuristic for Cyan: High Blue & High Green
+            if (b > 100 && g > 100) { 
+                // Cyan Target
+                tr = 0; tg = 255; tb = 255;
+            } else if (g > 50 || r > 50) { 
+                // Green Target (we map white/gray to green for retro terminal feel)
+                tr = 0; tg = 255; tb = 0;
+            } else {
+                // Black Target
+                tr = 0; tg = 0; tb = 0;
+            }
+            
+            // Standard Grayscale-ish Dithering usually only handles intensity,
+            // but here we do per-channel error diffusion roughly or just threshold.
+            // Let's do simple thresholding on intensity relative to the chosen target.
+            
+            // Actually, to get the "Dithered" look, we need to threshold against 128
+            // and diffuse error.
+            
+            // Let's dither the Green Channel (Luminance)
+            const oldG = g;
+            const newG = oldG < 128 ? 0 : 255;
+            const errG = oldG - newG;
+            
+            // Let's dither Blue Channel separately for Cyan bits
+            const oldB = b;
+            const newB = oldB < 128 ? 0 : 255;
+            const errB = oldB - newB;
+            
+            // Write
+            d[i] = 0;     // R usually 0
+            d[i+1] = newG;
+            d[i+2] = newB;
+            
+            // Distribute Error (Atkinson)
+            if (x+1 < w) {
+                const ni = (y*w + x+1)*4;
+                d[ni+1] += errG >> 3; d[ni+2] += errB >> 3;
+            }
+            if (x+2 < w) {
+                const ni = (y*w + x+2)*4;
+                d[ni+1] += errG >> 3; d[ni+2] += errB >> 3;
+            }
+            if (y+1 < h && x-1 >= 0) {
+                const ni = ((y+1)*w + x-1)*4;
+                d[ni+1] += errG >> 3; d[ni+2] += errB >> 3;
+            }
+            if (y+1 < h) {
+                const ni = ((y+1)*w + x)*4;
+                d[ni+1] += errG >> 3; d[ni+2] += errB >> 3;
+            }
+            if (y+1 < h && x+1 < w) {
+                const ni = ((y+1)*w + x+1)*4;
+                d[ni+1] += errG >> 3; d[ni+2] += errB >> 3;
+            }
+            if (y+2 < h) {
+                const ni = ((y+2)*w + x)*4;
+                d[ni+1] += errG >> 3; d[ni+2] += errB >> 3;
+            }
+        }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+}
+
+// --- MAIN LOOP ---
+
+function loop() {
+    update();
+    drawVectorScene();
+    applyDither();
+    
+    const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+    canvas.style.width = (W * scale * 0.95) + "px";
+    canvas.style.height = (H * scale * 0.95) + "px";
+
+    requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

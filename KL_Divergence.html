@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KL DIVERGENCE // REFERENCE PRIORS</title>
+<style>
+    :root {
+        --bg: #000000;
+        --fg: #00FF00;
+        --fg-cyan: #00FFFF;
+        --fg-gray: #AAAAAA;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family: 'Courier New', Courier, monospace;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    canvas {
+        image-rendering: pixelated;
+        box-shadow: 0 0 25px rgba(0, 255, 0, 0.15);
+    }
+    #crt-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 10;
+    }
+</style>
+</head>
+<body>
+
+<div id="crt-overlay"></div>
+<canvas id="display"></canvas>
+
+<script>
+/**
+ * KL DIVERGENCE VISUALIZER
+ * Style: Ditherpunk / Terminal Interface
+ * Panels: 1. KL Distance (Micro), 2. Reference Priors (Macro)
+ */
+
+const canvas = document.getElementById('display');
+const ctx = canvas.getContext('2d');
+
+const W = 320; 
+const H = 420; // Adjusted height for new layout
+
+canvas.width = W;
+canvas.height = H;
+
+const buffer = document.createElement('canvas');
+buffer.width = W;
+buffer.height = H;
+const bctx = buffer.getContext('2d');
+
+// --- MATH HELPERS ---
+
+// Gaussian PDF: p(x | mean, std)
+function gaussianPdf(x, mean, std) {
+    if (std <= 0) return 0;
+    const variance = std * std;
+    const exponent = -Math.pow(x - mean, 2) / (2 * variance);
+    const coefficient = 1 / (std * Math.sqrt(2 * Math.PI));
+    return coefficient * Math.exp(exponent);
+}
+
+// Numerical Integration (Rectangular Summation) for KL
+function integrate(func, rangeStart, rangeEnd, steps) {
+    const dx = (rangeEnd - rangeStart) / steps;
+    let sum = 0;
+    for (let i = 0; i < steps; i++) {
+        const x = rangeStart + i * dx;
+        sum += func(x) * dx;
+    }
+    return sum;
+}
+
+// --- LAYOUT CONSTANTS ---
+const MARGIN = 30;
+const PANEL1_HEIGHT = (H / 2) - MARGIN;
+const PANEL2_HEIGHT = H - MARGIN - PANEL1_HEIGHT;
+const GRAPH_W = W - MARGIN * 2;
+const GRAPH_TOP = MARGIN;
+const GRAPH_BOT = H - MARGIN;
+const PANEL1_MID_Y = MARGIN + PANEL1_HEIGHT;
+const PANEL2_MID_Y = H / 2 + MARGIN; 
+
+// --- STATE MANAGEMENT ---
+let time = 0;
+let mouseX = W / 2; // Follow mouse in Panel 1
+
+// Panel 1 State
+let p1_priorStd = 2.0; // Standard deviation of the Prior (Q)
+let p1_priorMean = 0;  // Mean of the Prior (Q)
+
+const p1_trueMean = 0;
+const p1_trueStd = 1.0; // Fixed "Posterior/Truth" (P)
+
+// Panel 2 State
+let p2_priorType = 'STRONG'; // 'STRONG' or 'REFERENCE'
+let p2_priorMean = 2;
+let p2_priorStd = 1;
+
+const p2_dataMean = 8;
+const p2_dataStd = 1.5; // Likelihood curve
+
+// Store results for display
+let klDivergence = 0;
+let surpriseDensity = [];
+
+// --- UPDATE FUNCTION ---
+function update() {
+    time++;
+
+    // Panel 1: Prior Oscillates based on mouse or auto
+    // Auto-oscillation:
+    // p1_priorMean = 2 * Math.sin(time * 0.01);
+    // Mouse following:
+    p1_priorMean = -3 + (mouseX / W) * 6; // Map mouse X to [-3, 3] range
+
+    // Panel 2: Cycle between Strong and Reference Priors
+    const cycleTime = 200; // Frames per state
+    if (Math.floor(time / cycleTime) % 2 === 0) {
+        p2_priorType = 'STRONG';
+        p2_priorMean = 2;
+        p2_priorStd = 1.0;
+    } else {
+        p2_priorType = 'REFERENCE';
+        p2_priorMean = 0; // Centered
+        p2_priorStd = 4.0; // Wide
+    }
+}
+
+// --- RENDERING FUNCTION ---
+function drawVectorScene() {
+    bctx.fillStyle = '#000000';
+    bctx.fillRect(0, 0, W, H);
+
+    bctx.font = '10px monospace';
+    bctx.lineWidth = 1;
+
+    // --- PANEL 1: KL DIVERGENCE DECONSTRUCTION ---
+    
+    bctx.fillStyle = '#00FF00';
+    bctx.fillText("PANEL 1: KL DIVERGENCE (PRIOR vs TRUTH)", MARGIN, MARGIN - 10);
+    bctx.fillText("D_KL(P||Q) = ∫ P(x) log( P(x) / Q(x) ) dx", MARGIN, MARGIN + 5);
+
+    // Define Plotting Area for Panel 1
+    const p1_top = MARGIN;
+    const p1_bottom = PANEL1_MID_Y;
+    const p1_graphH = PANEL1_HEIGHT - MARGIN;
+    
+    // X-axis range for plotting Gaussians
+    const xMin = -6;
+    const xMax = 6;
+    const xRange = xMax - xMin;
+    const scaleX1 = GRAPH_W / xRange;
+
+    // Helper to map X value to screen coordinates for Panel 1
+    const mapX1 = (x) => MARGIN + (x - xMin) * scaleX1;
+
+    // Calculate P(x) (Posterior/Truth) - Constant Gaussian
+    const p_dist = (x) => gaussianPdf(x, p1_trueMean, p1_trueStd);
+    
+    // Calculate Q(x) (Prior) - Variable Gaussian
+    const q_dist = (x) => gaussianPdf(x, p1_priorMean, p1_priorStd);
+
+    // Surprise Density: P(x) * log( P(x) / Q(x) )
+    const surprise_dist = (x) => {
+        const px = p_dist(x);
+        const qx = q_dist(x);
+        if (px <= 0 || qx <= 0) return 0;
+        // Avoid log(0) or log(negative)
+        const logRatio = Math.log(Math.max(1e-9, px / qx)); 
+        return px * logRatio;
+    };
+
+    // Draw Axes for Panel 1
+    bctx.strokeStyle = '#00FF00';
+    bctx.beginPath();
+    bctx.moveTo(MARGIN, p1_bottom);
+    bctx.lineTo(MARGIN + GRAPH_W, p1_bottom); // X Axis
+    bctx.moveTo(MARGIN, p1_top);
+    bctx.lineTo(MARGIN, p1_bottom); // Y Axis
+    bctx.stroke();
+    bctx.fillText("x", MARGIN + GRAPH_W + 5, p1_bottom);
+    bctx.fillText("Density", MARGIN - 30, p1_top - 5);
+
+    // Draw P(x) (Truth/Posterior) - Static Gray
+    bctx.strokeStyle = '#AAAAAA';
+    bctx.setLineDash([2, 2]);
+    bctx.beginPath();
+    let started = false;
+    for (let xScreen = MARGIN; xScreen <= MARGIN + GRAPH_W; xScreen+=2) {
+        const xVal = xMin + (xScreen - MARGIN) / scaleX1;
+        const pVal = p_dist(xVal);
+        const yScreen = p1_bottom - pVal * (p1_graphH / 0.4); // Scale to panel height
+        
+        if (!started) { bctx.moveTo(xScreen, yScreen); started = true; }
+        else { bctx.lineTo(xScreen, yScreen); }
+    }
+    bctx.stroke();
+    bctx.setLineDash([]);
+    
+    // Draw Q(x) (Prior) - Moving Green
+    bctx.strokeStyle = '#00FF00';
+    bctx.setLineDash([4, 4]);
+    bctx.beginPath();
+    started = false;
+    for (let xScreen = MARGIN; xScreen <= MARGIN + GRAPH_W; xScreen+=2) {
+        const xVal = xMin + (xScreen - MARGIN) / scaleX1;
+        const qVal = q_dist(xVal);
+        const yScreen = p1_bottom - qVal * (p1_graphH / 0.4);
+
+        if (!started) { bctx.moveTo(xScreen, yScreen); started = true; }
+        else { bctx.lineTo(xScreen, yScreen); }
+    }
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+    // Calculate and Draw Surprise Density & Integrate for KL Divergence
+    let currentKL = 0;
+    surpriseDensity = [];
+    const steps = 200;
+    const dx = xRange / steps;
+    
+    bctx.strokeStyle = '#00FFFF'; // Cyan for Surprise Density line
+    bctx.fillStyle = '#00FFFF'; // Cyan for fill
+    bctx.beginPath();
+    started = false;
+
+    for (let i = 0; i < steps; i++) {
+        const x = xMin + i * dx;
+        const surpriseVal = surprise_dist(x);
+        const yScreen = p1_bottom - surpriseVal * (p1_graphH / 4); // Scale surprise density
+        const xScreen = mapX1(x);
+        
+        if (!started) { bctx.moveTo(xScreen, yScreen); started = true; }
+        else { bctx.lineTo(xScreen, yScreen); }
+        
+        surpriseDensity.push({ x: xScreen, y: yScreen, width: dx * scaleX1 });
+        currentKL += surpriseVal * dx; // Accumulate integral
+    }
+    bctx.stroke();
+
+    // Fill area under Surprise Density curve (dither will be applied later)
+    bctx.globalCompositeOperation = 'source-over'; // Normal blend for fill
+    bctx.fill();
+
+    // Draw KL Divergence Value Text
+    bctx.fillStyle = '#00FF00';
+    bctx.fillText(`DISTANCE (KL): ${currentKL.toFixed(4)}`, MARGIN, p1_bottom + 15);
+    
+    // Label for Surprise Density
+    bctx.fillStyle = '#00FFFF';
+    bctx.fillText("Surprise Density", MARGIN + GRAPH_W - 100, p1_top + 20);
+    
+    // Reference lines for Surprise Density
+    bctx.strokeStyle = '#004444'; // Dark Cyan
+    bctx.setLineDash([1,1]);
+    bctx.beginPath();
+    bctx.moveTo(MARGIN, p1_bottom);
+    bctx.lineTo(MARGIN+GRAPH_W, p1_bottom);
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+
+    // --- PANEL 2: REFERENCE PRIOR STRATEGY ---
+    
+    bctx.fillStyle = '#00FF00';
+    bctx.fillText(`PANEL 2: PRIOR STRATEGY (${p2_priorType})`, MARGIN, PANEL1_MID_Y + 5);
+    bctx.fillText("Data Likelihood Centered at x=8", MARGIN, PANEL1_MID_Y + 20);
+
+    // Define Plotting Area for Panel 2
+    const p2_top = H / 2 + MARGIN;
+    const p2_bottom = GRAPH_BOT;
+    const p2_graphH = PANEL2_HEIGHT - MARGIN;
+
+    // X-axis range for Panel 2 (wider to accommodate data)
+    const xMin2 = -2;
+    const xMax2 = 14;
+    const xRange2 = xMax2 - xMin2;
+    const scaleX2 = GRAPH_W / xRange2;
+    
+    const mapX2 = (x) => MARGIN + (x - xMin2) * scaleX2;
+
+    // Likelihood (Data Distribution) - Fixed
+    const likelihood_dist = (x) => gaussianPdf(x, p2_dataMean, p2_dataStd);
+
+    // Priors for Panel 2
+    const strongPrior_dist = (x) => gaussianPdf(x, 2, 1.0);
+    const refPrior_dist = (x) => gaussianPdf(x, 0, 4.0);
+    
+    // Posterior calculation (simplified: average of prior mean and data mean, weighted)
+    // For reference, a proper Bayesian update is more complex. We approximate.
+    const posteriorUpdate = (priorMean, priorStd, dataMean, dataStd) => {
+        const dataWeight = 1 / (dataStd*dataStd);
+        const priorWeight = 1 / (priorStd*priorStd);
+        const posteriorMean = (priorWeight * priorMean + dataWeight * dataMean) / (priorWeight + dataWeight);
+        const posteriorStd = Math.sqrt(1 / (priorWeight + dataWeight));
+        return { mean: posteriorMean, std: posteriorStd };
+    };
+
+    let p2_priorDist, p2_postDist;
+    if (p2_priorType === 'STRONG') {
+        p2_priorDist = strongPrior_dist;
+        const post = posteriorUpdate(2, 1.0, p2_dataMean, p2_dataStd);
+        p2_postDist = (x) => gaussianPdf(x, post.mean, post.std);
+    } else { // REFERENCE
+        p2_priorDist = refPrior_dist;
+        const post = posteriorUpdate(0, 4.0, p2_dataMean, p2_dataStd);
+        p2_postDist = (x) => gaussianPdf(x, post.mean, post.std);
+    }
+
+    // Draw Axes for Panel 2
+    bctx.strokeStyle = '#00FF00';
+    bctx.beginPath();
+    bctx.moveTo(MARGIN, p2_bottom);
+    bctx.lineTo(MARGIN + GRAPH_W, p2_bottom); // X Axis
+    bctx.moveTo(MARGIN, p2_top);
+    bctx.lineTo(MARGIN, p2_bottom); // Y Axis
+    bctx.stroke();
+    bctx.fillText("x", MARGIN + GRAPH_W + 5, p2_bottom);
+    bctx.fillText("Density", MARGIN - 30, p2_top - 5);
+
+    // Draw Likelihood (Data) - Fixed Gray
+    bctx.strokeStyle = '#AAAAAA';
+    bctx.setLineDash([2, 2]);
+    bctx.beginPath();
+    started = false;
+    for (let xScreen = MARGIN; xScreen <= MARGIN + GRAPH_W; xScreen+=2) {
+        const xVal = xMin2 + (xScreen - MARGIN) / scaleX2;
+        const lVal = likelihood_dist(xVal);
+        const yScreen = p2_bottom - lVal * (p2_graphH / 0.5); // Scale to panel height
+        if (!started) { bctx.moveTo(xScreen, yScreen); started = true; }
+        else { bctx.lineTo(xScreen, yScreen); }
+    }
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+    // Draw Prior (Green) and Posterior (Cyan) for Panel 2
+    bctx.strokeStyle = '#00FF00'; // Prior Green
+    bctx.setLineDash([4, 4]);
+    bctx.beginPath();
+    started = false;
+    for (let xScreen = MARGIN; xScreen <= MARGIN + GRAPH_W; xScreen+=2) {
+        const xVal = xMin2 + (xScreen - MARGIN) / scaleX2;
+        const priorVal = p2_priorDist(xVal);
+        const yScreen = p2_bottom - priorVal * (p2_graphH / 0.5);
+        if (!started) { bctx.moveTo(xScreen, yScreen); started = true; }
+        else { bctx.lineTo(xScreen, yScreen); }
+    }
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+    // Draw Posterior (Cyan)
+    bctx.strokeStyle = '#00FFFF'; // Posterior Cyan
+    bctx.setLineDash([6, 3]);
+    bctx.beginPath();
+    started = false;
+    for (let xScreen = MARGIN; xScreen <= MARGIN + GRAPH_W; xScreen+=2) {
+        const xVal = xMin2 + (xScreen - MARGIN) / scaleX2;
+        const postVal = p2_postDist(xVal);
+        const yScreen = p2_bottom - postVal * (p2_graphH / 0.5);
+        if (!started) { bctx.moveTo(xScreen, yScreen); started = true; }
+        else { bctx.lineTo(xScreen, yScreen); }
+    }
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+    // Draw Arrows showing the "Jump" from Prior to Posterior Peak
+    bctx.fillStyle = '#FFFFFF';
+    bctx.strokeStyle = '#FFFFFF';
+    
+    // Find peak of Prior and Posterior
+    const findPeak = (distFunc, xStart, xEnd, steps=100) => {
+        let maxX = xStart;
+        let maxY = -Infinity;
+        const dx = (xEnd - xStart) / steps;
+        for (let i = 0; i < steps; i++) {
+            const x = xStart + i * dx;
+            const y = distFunc(x);
+            if (y > maxY) {
+                maxY = y;
+                maxX = x;
+            }
+        }
+        return { x: maxX, y: maxY };
+    };
+
+    const priorPeak = findPeak(p2_priorDist, xMin2, xMax2);
+    const postPeak = findPeak(p2_postDist, xMin2, xMax2);
+
+    const priorPeakXScreen = mapX2(priorPeak.x);
+    const priorPeakYScreen = p2_bottom - priorPeak.y * (p2_graphH / 0.5);
+    const postPeakXScreen = mapX2(postPeak.x);
+    const postPeakYScreen = p2_bottom - postPeak.y * (p2_graphH / 0.5);
+
+    // Draw line/arrow
+    bctx.beginPath();
+    bctx.moveTo(priorPeakXScreen, priorPeakYScreen);
+    bctx.lineTo(postPeakXScreen, postPeakYScreen);
+    
+    // Add arrowhead
+    const angle = Math.atan2(postPeakYScreen - priorPeakYScreen, postPeakXScreen - priorPeakXScreen);
+    const arrowHeadSize = 10;
+    bctx.moveTo(postPeakXScreen, postPeakYScreen);
+    bctx.lineTo(postPeakXScreen - arrowHeadSize * Math.cos(angle - Math.PI / 6), postPeakYScreen - arrowHeadSize * Math.sin(angle - Math.PI / 6));
+    bctx.moveTo(postPeakXScreen, postPeakYScreen);
+    bctx.lineTo(postPeakXScreen - arrowHeadSize * Math.cos(angle + Math.PI / 6), postPeakYScreen - arrowHeadSize * Math.sin(angle + Math.PI / 6));
+    
+    bctx.stroke();
+
+    // Display text
+    bctx.fillStyle = '#00FF00';
+    if (p2_priorType === 'STRONG') {
+         bctx.fillText("LOW INFO GAIN", MARGIN, p2_bottom + 15);
+    } else {
+         bctx.fillStyle = '#00FFFF'; // Cyan for emphasis
+         bctx.fillText("MAX INFO GAIN", MARGIN, p2_bottom + 15);
+    }
+    
+    // Uniform Prior comparison line in Panel 1
+    bctx.fillStyle = '#AAAAAA';
+    bctx.fillText("P(x) Truth", MARGIN, p1_top + 40);
+    bctx.fillText("Q(x) Prior", MARGIN, p1_top + 55);
+    bctx.fillText("Surprise", MARGIN, p1_top + 70);
+}
+
+
+// --- ATKINSON DITHERING ---
+function applyDither() {
+    const imgData = bctx.getImageData(0, 0, W, H);
+    const d = imgData.data;
+    const w = W;
+    const h = H;
+
+    // Palette: Black (0,0,0), Green (0,255,0), Cyan (0,255,255), Gray (128,128,128)
+    const BLACK = [0, 0, 0];
+    const GREEN = [0, 255, 0];
+    const CYAN = [0, 255, 255];
+    const GRAY = [128, 128, 128]; // For static P(x) curve
+    
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            
+            let r = d[i];
+            let g = d[i+1];
+            let b = d[i+2];
+            
+            let targetColor;
+            
+            // Simple color selection based on dominance
+            if (b > 100 && g > 100 && r < 50) { // Predominantly Cyan?
+                targetColor = CYAN;
+            } else if (g > 50 && r < 150) { // Predominantly Green?
+                targetColor = GREEN;
+            } else if (r >= 100 && g >= 100 && b >= 100) { // Mostly White/Gray source?
+                targetColor = GRAY;
+            }
+             else { // Assume Black source
+                targetColor = BLACK;
+            }
+            
+            // Calculate error based on luminance or average channel
+            // Luminance = 0.299*R + 0.587*G + 0.114*B
+            const luminance = 0.299*r + 0.587*g + 0.114*b;
+            const threshold = 128; // Standard threshold for b/w dithering
+            
+            let finalColor;
+            let error = 0;
+
+            // Apply target palette color and quantize
+            if (luminance < threshold) { // Target Black
+                finalColor = BLACK;
+                error = luminance - 0;
+            } else { // Target Green/Cyan/Gray
+                if (targetColor[1] === 255 && targetColor[2] === 255) finalColor = CYAN; // Cyan
+                else if (targetColor[1] === 255) finalColor = GREEN; // Green
+                else finalColor = GRAY; // Gray
+                error = luminance - 255; // Error relative to white/target max
+            }
+            
+            d[i] = finalColor[0];
+            d[i+1] = finalColor[1];
+            d[i+2] = finalColor[2];
+            
+            // Distribute Error (Atkinson)
+            if (error === 0) continue;
+
+            const distribute = (dx, dy, coeff) => {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                    const ni = (ny * w + nx) * 4;
+                    // Distribute error to R, G, B channels proportionally
+                    // Simplified: just add scaled error to each channel
+                    const correction = error * coeff;
+                    d[ni]   += correction;
+                    d[ni+1] += correction;
+                    d[ni+2] += correction;
+                }
+            };
+
+            // Atkinson coefficients (1/8th each)
+            distribute(1, 0, 1/8);
+            distribute(2, 0, 1/8);
+            distribute(-1, 1, 1/8);
+            distribute(0, 1, 1/8);
+            distribute(1, 1, 1/8);
+            distribute(0, 2, 1/8);
+        }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+}
+
+// --- MAIN LOOP ---
+function loop() {
+    update();
+    drawVectorScene();
+    applyDither();
+    
+    // Resize canvas to fit window
+    const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+    canvas.style.width = (W * scale * 0.95) + "px";
+    canvas.style.height = (H * scale * 0.95) + "px";
+
+    requestAnimationFrame(loop);
+}
+
+// --- EVENT LISTENERS ---
+window.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+});
+
+// Initial draw and start loop
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
