@@ -577,11 +577,12 @@
                         <p>HMC treats the posterior distribution like a physical terrain to explore it efficiently. Here is how the machinery works, step-by-step:</p>
                         <p><strong>1. The Landscape (Negative Log-Probability)</strong><br>
                         To apply physics to statistics, we treat the probability distribution as a "Potential Energy" field.<br>
-                        • The Inversion: In physics, gravity pulls objects to the lowest energy state (the bottom of a valley). In statistics, we want the highest probability (the top of a peak). By taking the negative of the probability, we flip the map upside down: high-probability peaks become deep valleys that the sampler naturally "falls" into.<br>
+                        • The Inversion: In physics, gravity pulls objects to the lowest energy state (the bottom of a valley). In statistics, we want the highest probability (the top of a peak). By taking the negative logarithm of the probability, we flip the map upside down: high-probability peaks become deep valleys that the sampler naturally "falls" into.<br>
                         
-                        <p><strong>2. Momentum (The Kick)</strong><br>
-                        To move around this landscape, we give the sampler a physical "kick." We pair every parameter with an auxiliary momentum variable, sampled from a proposal distribution (typically a Gaussian).<br>
-                        The shape of this distribution (the mass matrix) acts like a vehicle's suspension. If tuned correctly to the valley's geometry, it allows the sampler to traverse long distances and complex correlations efficiently, rather than stumbling blindly like standard random-walk samplers.</p>
+                        <p><strong>2. Momentum and The Mass Matrix</strong><br>
+                        To move around this landscape, we give the sampler a physical "kick." We pair every parameter with an auxiliary momentum variable.<br>
+                        Think of the mass matrix as defining the "weight" of the ball, but with a twist: you can make the ball heavy in one direction and light in another. The Mass Matrix creates the shape of the momentum distribution.
+                    </p>
                         <p>In practice, HMC spends a "warm-up" phase learning the shape of the valley to select the appropriate matrix:<br>
                         • Identity Matrix: The default setting. It assumes all parameters have the exact same scale and no correlations. It often struggles with real-world data (e.g., comparing "Income" to "Age").<br>
                         • Diagonal Matrix: The industry standard. It estimates the variance of each parameter independently. It effectively "squishes" long dimensions and stretches short ones to make the probability valley look like a round bowl.<br>
@@ -620,7 +621,7 @@
                         <p>Estimates how much the model relies on a single data point.</p>
                         <p>- Low Pareto Values<br>
                         The data point is normal; the model understands it easily alongside the others.</p>
-                        <p>- High Pareto Values (> 0.7):<br>
+                        <p>- High Pareto Values (> 0.7)<br>
                         The data point is highly influential and "surprising." The model struggles to fit it and is likely overfitting. Removing this point would drastically change predictions. It also signals that the posterior is too heavy-tailed for reliable approximation.</p>
                     </div>
                     <div class="subsection">
