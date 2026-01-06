@@ -364,10 +364,73 @@
                     </svg>
                 </button>
                 <!-- BUTTON END -->
-            </span>
-            <p>MCMC approximates the posterior by building a chain of samples. It iteratively proposes and accepts guesses to map the posterior distribution's shape.</p>
-            <p>The posterior is a mathematical function representing your updated beliefs.</p>
-        </div>
+                <p>The posterior is a mathematical function representing your updated beliefs.</p>
+
+                <!-- Start of Inserted Explanation -->
+                <div style="margin-top: 2rem;">
+                    <p>The posterior probability formula looks like this:</p>
+    
+                    <!-- Equation 1: Basic Posterior -->
+                    <div style="display: flex; align-items: center; justify-content: center; font-family: 'Times New Roman', serif; font-size: 1.2rem; margin: 1.5rem 0;">
+                        <span style="margin-right: 10px;">Posterior =</span>
+                        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                            <div style="border-bottom: 1px solid white; padding-bottom: 4px; margin-bottom: 4px;">
+                                Likelihood &times; Prior
+                            </div>
+                            <div>
+                                The Total Sum
+                            </div>
+                        </div>
+                    </div>
+    
+                    <h3>The Problem</h3>
+                    <p><strong>"The Total Sum"</strong> (the denominator) is the part we often cannot solve analytically. It requires adding up every possible version of the world (integrating over high-dimensional space), which is computationally impossible. Without it, we can’t calculate the absolute probability (e.g., "There is exactly a 12.5% chance").</p>
+    
+                    <h3>The Solution</h3>
+                    <p>We rely on <strong>Relative Probability</strong>. This is the ratio that tells us how much more likely one specific guess is compared to another (e.g., "Point B is twice as likely as Point A"), without needing to know the probability of either point in isolation.</p>
+    
+                    <h3>The Trick</h3>
+                    <p>When we compare two points (A and B) to decide where the sampler should step next, we divide their formulas. Because "The Total Sum" is the denominator for both A and B, it cancels out mathematically:</p>
+    
+                    <!-- Equation 2: The Cancellation -->
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; font-family: 'Times New Roman', serif; font-size: 1.2rem; margin: 2rem 0; gap: 15px;">
+                        
+                        <!-- Term 1: Ratio of Posteriors -->
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="border-bottom: 1px solid white; padding-bottom: 4px; margin-bottom: 4px;">Posterior of B</div>
+                            <div>Posterior of A</div>
+                        </div>
+    
+                        <span>=</span>
+    
+                        <!-- Term 2: Complex Fraction showing cancellation -->
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <!-- Numerator Side -->
+                            <div style="border-bottom: 1px solid white; padding-bottom: 6px; margin-bottom: 6px; display: flex; flex-direction: column; align-items: center;">
+                                 <div style="border-bottom: 1px solid white; font-size: 0.9em;">Numerator B</div>
+                                 <div style="color: #ff4d4d; font-size: 0.8em;">The Total Sum</div>
+                            </div>
+                            <!-- Denominator Side -->
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                 <div style="border-bottom: 1px solid white; font-size: 0.9em;">Numerator A</div>
+                                 <div style="color: #ff4d4d; font-size: 0.8em;">The Total Sum</div>
+                            </div>
+                        </div>
+    
+                        <span>=</span>
+    
+                        <!-- Term 3: Final Result -->
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="border-bottom: 1px solid white; padding-bottom: 4px; margin-bottom: 4px;">Numerator B</div>
+                            <div>Numerator A</div>
+                        </div>
+    
+                    </div>
+    
+                    <p>By using relative probability, we are left with only the Numerators (Likelihood &times; Prior). We can calculate these easily, allowing us to map the peaks and valleys of the distribution without ever knowing the mountain's total volume.</p>
+                </div>
+                <!-- End of Inserted Explanation -->
+            </div>
         <div class="subsection">
             <span class="subsection-title">
                 Metropolis Hastings [ACCEPTING/REJECTING SAMPLES]
