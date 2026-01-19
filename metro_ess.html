@@ -10,71 +10,106 @@
             --phosphor: #39ff14; /* Neon Green */
             --off-phosphor: #0f2a08;
             --border-width: 2px;
+            --gap-std: 1rem;
+            --font-base: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             margin: 0;
-            padding: 0;
+            padding: 1rem;
             background-color: var(--bg-color);
             color: var(--phosphor);
-            font-family: 'Courier New', Courier, monospace;
-            height: 100vh;
+            font-family: var(--font-base);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
         }
 
         /* Brutalist UI Container */
         #terminal-ui {
             border: var(--border-width) solid var(--phosphor);
-            padding: 4px;
-            width: 960px; /* 3x scale of 320 internal */
-            max-width: 95vw;
+            padding: 0.25rem;
+            width: 100%;
+            max-width: 1000px; /* Prevents stretching too wide on ultrawide */
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-color);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.1);
         }
 
         header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
+            align-items: center;
             border-bottom: var(--border-width) solid var(--phosphor);
-            padding: 8px 12px;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.25rem;
             text-transform: uppercase;
             font-weight: bold;
             letter-spacing: 1px;
-            margin-bottom: 4px;
+            /* Responsive Font Size */
+            font-size: clamp(0.7rem, 2vw, 1rem); 
+            line-height: 1.4;
+        }
+
+        header span {
+            white-space: nowrap;
         }
 
         /* The Canvas */
         #crt-canvas {
             display: block;
             width: 100%;
+            height: auto;
+            /* Maintain retro aspect ratio regardless of container */
+            aspect-ratio: 4 / 3; 
             image-rendering: pixelated; /* Crucial for sharp dither pixels */
-            aspect-ratio: 4 / 3;
             background: #000;
         }
 
-        /* Controls */
+        /* Controls Container */
         #controls {
             border-top: var(--border-width) solid var(--phosphor);
-            padding: 10px;
+            padding: 0.75rem;
+            margin-top: 0.25rem;
             display: flex;
-            gap: 20px;
+            flex-wrap: wrap; /* Allows stacking on mobile */
+            gap: var(--gap-std);
             align-items: center;
-            justify-content: space-between; /* Space out the new complex controls */
-            margin-top: 4px;
+            justify-content: space-between;
         }
+
+        /* Grouping control sections for cleaner wrapping */
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1 1 auto; /* Grow/shrink nicely */
+            justify-content: center;
+        }
+        
+        .control-group.buttons { justify-content: flex-start; }
+        .control-group.stats { justify-content: flex-end; text-align: right; }
 
         button {
             background: var(--bg-color);
             color: var(--phosphor);
             border: var(--border-width) solid var(--phosphor);
-            padding: 5px 15px;
+            padding: 0.5rem 1rem;
             font-family: inherit;
-            font-size: 1rem;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.1s;
+            flex: 1; /* Buttons share space evenly on small screens */
+            white-space: nowrap;
         }
 
         button:hover {
@@ -87,25 +122,32 @@
         }
 
         .stat-block {
-            font-size: 0.8rem;
-            line-height: 1.2;
-            text-align: right;
-            min-width: 180px;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            line-height: 1.4;
+            min-width: 140px;
         }
 
-        /* --- NEW: SLIDER STYLING --- */
+        /* --- SLIDER STYLING --- */
         
         .slider-container {
             display: flex;
             flex-direction: column;
-            width: 180px;
+            flex: 2 1 200px; /* Takes more space, minimum 200px width */
+            min-width: 180px;
+        }
+
+        .slider-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
         }
 
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
             background: transparent;
-            margin-top: 8px;
         }
 
         input[type=range]:focus {
@@ -115,7 +157,7 @@
         /* The Track */
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
-            height: 12px;
+            height: 14px; /* Slightly taller for touch */
             cursor: pointer;
             background: var(--off-phosphor);
             border: 1px solid var(--phosphor);
@@ -123,12 +165,57 @@
 
         /* The Thumb (Handle) */
         input[type=range]::-webkit-slider-thumb {
-            height: 18px;
-            width: 12px;
+            height: 20px;
+            width: 14px;
             background: var(--phosphor);
             cursor: pointer;
             -webkit-appearance: none;
             margin-top: -4px; /* Offset to center vertically */
+            box-shadow: 0 0 5px var(--phosphor);
+        }
+        
+        /* Firefox Slider Styles */
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 14px;
+            cursor: pointer;
+            background: var(--off-phosphor);
+            border: 1px solid var(--phosphor);
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 20px;
+            width: 14px;
+            background: var(--phosphor);
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 600px) {
+            #controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .control-group.buttons {
+                justify-content: stretch;
+            }
+            
+            .control-group.stats {
+                justify-content: center;
+                text-align: center;
+                border-top: 1px dashed var(--off-phosphor);
+                padding-top: 0.5rem;
+            }
+
+            .stat-block {
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -137,7 +224,7 @@
 <div id="terminal-ui">
     <header>
         <span>SYS.MCMC.V2</span>
-        <span>ESS_METRICS//ACTIVE</span>
+        <span class="mobile-hide">ESS_METRICS//ACTIVE</span>
         <span id="clock">00:00:00</span>
     </header>
 
@@ -145,34 +232,37 @@
     <canvas id="crt-canvas"></canvas>
 
     <div id="controls">
-        <div style="display:flex; gap:10px;">
+        <!-- Group 1: Buttons -->
+        <div class="control-group buttons">
             <button id="btn-toggle">HALT/RESUME</button>
             <button id="btn-reset">FLUSH</button>
         </div>
 
-        <!-- NEW: Step Size Slider -->
+        <!-- Group 2: Slider -->
         <div class="slider-container">
-            <label for="step-slider" style="font-size: 0.75rem; text-transform: uppercase;">
-                PROPOSAL_SIGMA: <span id="step-val">0.50</span>
-            </label>
+            <div class="slider-label">
+                <span>PROPOSAL_SIGMA</span>
+                <span id="step-val">0.50</span>
+            </div>
             <input type="range" id="step-slider" min="0.05" max="4.0" step="0.05" value="0.5">
         </div>
 
-        <!-- UPDATED: Stats Block -->
-        <div class="stat-block">
-            N: <span id="sample-count">0</span> | ACC: <span id="accept-rate">0.00</span><br>
-            LAG1_R: <span id="lag-corr">0.00</span> | ESS: <span id="ess-est">0</span>
+        <!-- Group 3: Stats -->
+        <div class="control-group stats">
+            <div class="stat-block">
+                N: <span id="sample-count">0</span> | ACC: <span id="accept-rate">0.00</span><br>
+                LAG1_R: <span id="lag-corr">0.00</span> | ESS: <span id="ess-est">0</span>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
 /**
- * DITHERPUNK MCMC VISUALIZER V2
+ * DITHERPUNK MCMC VISUALIZER V2 (RESPONSIVE)
  * --------------------------
- * Resolution: Internal 320x240 -> Scaled via CSS
- * Color: 1-bit logic mapped to Green/Black
- * Updates: Step Size control & Autocorrelation/ESS estimation
+ * Resolution: Internal 320x240 (Fixed for Logic)
+ * Display: Scaled via CSS Aspect Ratio
  */
 
 // --- CONFIGURATION ---
@@ -184,6 +274,10 @@ const PHOSPHOR_B = 20;
 
 // --- CANVAS SETUP ---
 const canvas = document.getElementById('crt-canvas');
+// Set internal resolution explicitly - CSS handles the display size
+canvas.width = INTERNAL_WIDTH;
+canvas.height = INTERNAL_HEIGHT;
+
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 // Offscreen buffer
@@ -191,9 +285,6 @@ const bufferCanvas = document.createElement('canvas');
 bufferCanvas.width = INTERNAL_WIDTH;
 bufferCanvas.height = INTERNAL_HEIGHT;
 const bCtx = bufferCanvas.getContext('2d');
-
-canvas.width = INTERNAL_WIDTH;
-canvas.height = INTERNAL_HEIGHT;
 
 // --- STATE MANAGEMENT ---
 let isRunning = true;
@@ -222,14 +313,14 @@ const mcmcState = {
     x: 0,
     y: 0,
     history: [], 
-    historyLimit: 300, // Increased history to see "stickiness" in trace better
+    historyLimit: 300, 
     histogram: new Array(60).fill(0),
     densityMap: new Float32Array(INTERNAL_WIDTH * INTERNAL_HEIGHT).fill(0),
     
     // NEW: Correlation tracking
     acfBuffer: [],
-    acfLimit: 500, // Buffer size for rolling statistics
-    currentStepSize: 0.5, // Default proposal standard deviation
+    acfLimit: 500,
+    currentStepSize: 0.5,
 
     step: function() {
         // Proposal: Symmetric random walk with dynamic step size
@@ -325,7 +416,7 @@ const mcmcState = {
     }
 };
 
-// --- RENDERING ROUTINES ---
+// --- RENDERING ROUTINES (Resolution Agnostic Logic) ---
 
 function drawLayout(ctx) {
     ctx.fillStyle = "#000000";
@@ -526,7 +617,6 @@ function loop() {
     applyDithering(bCtx, ctx);
 
     // 4. Update UI & Stats
-    // Calculate stats once per frame, not every step
     const stats = mcmcState.calculateStats();
 
     document.getElementById('sample-count').innerText = totalSamples;
@@ -539,9 +629,8 @@ function loop() {
     const rhoEl = document.getElementById('lag-corr');
     rhoEl.innerText = stats.rho.toFixed(2);
     
-    // Visual warning for high correlation (Bad mixing)
     if(stats.rho > 0.8 || stats.rho < -0.8) {
-        rhoEl.style.color = "#ff3914"; // Red for danger
+        rhoEl.style.color = "#ff3914"; 
         rhoEl.style.textShadow = "0px 0px 2px red";
     } else {
         rhoEl.style.color = "var(--phosphor)";

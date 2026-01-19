@@ -388,7 +388,7 @@
                     <p><strong>"The Total Sum"</strong> is the part we often cannot solve analytically. It requires adding up every possible version of the world (integrating over high-dimensional space), which is computationally impossible. Without it, we can’t calculate the absolute probability (e.g., "There is exactly a 12.5% chance").</p>
     
                     <h3>The Solution</h3>
-                    <p>We rely on <strong>Relative Probability</strong>. This is the ratio that tells us how much more likely one specific guess is compared to another (e.g., "Point B is twice as likely as Point A"), without needing to know the probability of either point in isolation.</p>
+                    <p>We rely on <strong>Relative Probability</strong>. This is the ratio that tells us how much more likely one parameter value is compared to another (e.g., "Point B is twice as likely as Point A"), without needing to know the probability of either point in isolation.</p>
     
                     <h3>The Trick</h3>
                     <p>When we compare two points (A and B) to decide where the sampler should step next, we divide their formulas. Because "The Total Sum" is the denominator for both A and B, it cancels out mathematically:</p>
@@ -480,7 +480,7 @@
                     </button>
                     <!-- BUTTON END -->
             
-                    An objective prior consistent across units measuring the same thing (e.g. miles, kilometers). It defines probability using Fisher Information, which measures likelihood sensitivity.
+                    An objective prior consistent across units measuring the same thing (e.g. miles, kilometers). It defines probability using the square root of Fisher Information, which measures likelihood sensitivity.
                 </p>
                 <p>Fisher Information: 
                     <!-- EYE BUTTON INSERTED HERE -->
@@ -601,7 +601,7 @@
             <p>Check this second to measure precision.</p>
             <p>Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
             <p><strong>What it is:</strong><br>
-            ESS estimates the number of independent data points your MCMC chain is equivalent to. Because MCMC samples are correlated (“sticky”), 4,000 steps might only provide as much information as 800 independent draws.</p>
+            ESS estimates the number of independent data points your MCMC chain is equivalent to. Because MCMC samples are correlated, 4,000 steps might only provide as much information as 800 independent draws.</p>
             <p><strong>How it is computed:</strong><br>
             It penalizes the total sample count (N) based on autocorrelation.</p>
             <p>1. Measure Stickiness: Calculate the correlation between samples at various lags (ρ̂_k).</p>
