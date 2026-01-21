@@ -585,36 +585,42 @@
             <p>MCMC methods have theoretical guarantees of correctness regardless of starting point, but only for infinite samples. In practice, we need ways to assess convergence for finite samples.</p>
             <p>𝑅̂^ calculates the "total variance" by combining two sources: the within-chain variance (the average spread inside each chain) and the between-chain variance (the variance of the chain means). 𝑅̂ is essentially the square root of the ratio of this total variance to the within-chain variance. If the chains have converged, they will be indistinguishable; the between-chain variance will be negligible, and the total variance will equal the within-chain variance, resulting in 𝑅̂ ≈ 1.0. If 𝑅̂ &gt; 1.01, the chains are still distinguishing themselves from one another (the between-chain variance is significant), indicating they have not yet fully explored the target distribution.</p>
             </div>
-        <div class="subsection">
-            <span class="subsection-title">
-                2. Effective Sample Size (ESS)
-        
-                <!-- BUTTON START -->
-                <button class="eye-btn" onclick="openViewport('metro_ess.html', 'EFFECTIVE SAMPLE SIZE')" title="Visualize ESS">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                        <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
-                    </svg>
-                </button>
-                <!-- BUTTON END -->
-            </span>
-            <p>Check this second to measure precision.</p>
-            <p>Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
-            <p><strong>What it is:</strong><br>
-            ESS estimates the number of independent data points your MCMC chain is equivalent to. Because MCMC samples are correlated, 4,000 steps might only provide as much information as 800 independent draws.</p>
-            <p><strong>How it is computed:</strong><br>
-            It penalizes the total sample count (N) based on autocorrelation.</p>
-            <p>1. Measure Stickiness: Calculate the correlation between samples at various lags (ρ̂_k).</p>
-            <p>2. Sum & Divide: Sum the positive correlations to find the “inefficiency factor,” then divide the total count by it.</p>
-            <p>ESS = N / Sum of Autocorrelations</p>
-            <p>High correlation → High inefficiency → Low ESS.</p>
-            <p><strong>Why it is helpful:</strong><br>
-            It measures precision.</p>
-            <ul>
-                <li>High ESS: Your posterior estimates (mean, intervals) are stable and accurate.</li>
-                <li>Low ESS: Your estimates are noisy and unreliable, even if the model has converged (R̂ ≈ 1).</li>
-            </ul>
-        </div>
+            <div class="subsection">
+                <span class="subsection-title">
+                    2. Effective Sample Size (ESS)
+            
+                    <!-- BUTTON START -->
+                    <button class="eye-btn" onclick="openViewport('metro_ess.html', 'EFFECTIVE SAMPLE SIZE')" title="Visualize ESS">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            <rect x="2" y="10" width="1" height="1" /><rect x="21" y="13" width="1" height="1" />
+                        </svg>
+                    </button>
+                    <!-- BUTTON END -->
+                </span>
+                <p>Check this second to measure precision.</p>
+                <p>Once chains have converged (ˆR ≈ 1), ESS tells you the volume of useful information in your samples.</p>
+                <p><strong>What it is:</strong><br>
+                ESS estimates the number of independent data points your MCMC chain is equivalent to. Because MCMC samples are correlated, 4,000 steps might only provide as much information as 800 independent draws.</p>
+                <p><strong>How it is computed:</strong><br>
+                It penalizes the total sample count (N) based on autocorrelation.</p>
+                <p>1. Measure Stickiness: Calculate the correlation between samples at various lags (ρ̂_k).</p>
+                <p>2. Sum & Divide: Sum the positive correlations to find the “inefficiency factor,” then divide the total count by it.</p>
+                <p>ESS = N / Sum of Autocorrelations</p>
+                <p>High correlation → High inefficiency → Low ESS.</p>
+                <p><strong>The Efficiency Ratio (ESS / N):</strong><br>
+                Compare ESS to your total raw sample count (N).</p>
+                <ul>
+                    <li>&gt;0.1 (10%): Generally healthy mixing.</li>
+                    <li>&lt;0.01 (1%): Highly inefficient. You are wasting computational power; consider re-parameterizing the model.</li>
+                </ul>
+                <p><strong>Why it is helpful:</strong><br>
+                It measures precision.</p>
+                <ul>
+                    <li>High ESS: Your posterior estimates (mean, intervals) are stable and accurate.</li>
+                    <li>Low ESS: Your estimates are noisy and unreliable, even if the model has converged (R̂ ≈ 1).</li>
+                </ul>
+            </div>
         <div class="subsection">
             <span class="subsection-title">3. MCSE (Monte Carlo Standard Error)</span>
             <p><strong>What it is:</strong><br>
