@@ -448,7 +448,7 @@
             <p>Metropolis-Hastings acts like an explorer mapping a probability landscape. From its current spot (Point A), it suggests a random nearby step (Point B) and compares their posterior densities.</p>
             <ul>
                 <li><strong>The Uphill Move:</strong> If Point B has a higher density (more probable), the algorithm always accepts and moves there.</li>
-                <li><strong>The Downhill Gamble:</strong> If Point B is lower, it doesn't automatically reject it. Instead, it accepts the move with a probability based on the ratio of the two heights (e.g., if B is 70% as high as A, there is a 70% chance to move).</li>
+                <li><strong>The Downhill Gamble:</strong> The Downhill Gamble: If Point B is lower, it doesn’t auto-reject. Instead, it determines the acceptance probability using the density ratio (e.g., if B is 70% as high as A, there is a 70% chance to move).</li>
                 <li><strong>The Outcome:</strong> If accepted, B becomes the next sample; if rejected, it stays put and records A again. This willingness to occasionally step "downhill" prevents the algorithm from getting stuck on local peaks, ensuring it traverses valleys to fully map the distribution's true shape.</li>
             </ul>
         </div>
