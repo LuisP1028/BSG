@@ -448,7 +448,7 @@
             <p>Metropolis-Hastings acts like an explorer mapping a probability landscape. From its current spot (Point A), it suggests a random nearby step (Point B) and compares their posterior densities.</p>
             <ul>
                 <li><strong>The Uphill Move:</strong> If Point B has a higher density (more probable), the algorithm always accepts and moves there.</li>
-                <li><strong>The Downhill Gamble:</strong> The Downhill Gamble: If Point B is lower, it doesn’t auto-reject. Instead, it determines the acceptance probability using the density ratio (e.g., if B is 70% as high as A, there is a 70% chance to move).</li>
+                <li><strong>The Downhill Gamble:</strong> If Point B is lower, it doesn’t auto-reject. Instead, it determines the acceptance probability using the density ratio (e.g., if B is 70% as high as A, there is a 70% chance to move).</li>
                 <li><strong>The Outcome:</strong> If accepted, B becomes the next sample; if rejected, it stays put and records A again. This willingness to occasionally step "downhill" prevents the algorithm from getting stuck on local peaks, ensuring it traverses valleys to fully map the distribution's true shape.</li>
             </ul>
         </div>
@@ -480,7 +480,7 @@
                     </button>
                     <!-- BUTTON END -->
             
-                    An objective prior consistent across units measuring the same thing (e.g. miles, kilometers). It defines probability using the square root of Fisher Information, which measures likelihood sensitivity.
+                    An objective prior consistent across units measuring the same thing (e.g. miles, kilometers).
                 </p>
                 <p>Fisher Information: 
                     <!-- EYE BUTTON INSERTED HERE -->
@@ -530,7 +530,7 @@
         <div class="subsection">
             <span class="subsection-title">Bayesian Test Statistic (T-Stat)</span>
             
-            <p>The<em>𝒯</em> statistic metric is chosen to measure a specific feature of the data, such as the average, the standard deviation, or the maximum value.</p>
+            <p>The <em>𝒯</em> statistic metric is chosen to measure a specific feature of the data, such as the average, the standard deviation, or the maximum value.</p>
             
             <ul style="margin-top: 5px; padding-left: 20px;">
                 <li><strong>𝒯_obs:</strong> The metric value measured from the real data.</li>
@@ -583,7 +583,10 @@
                 <!-- BUTTON END -->
             </span>
             <p>MCMC methods have theoretical guarantees of correctness regardless of starting point, but only for infinite samples. In practice, we need ways to assess convergence for finite samples.</p>
-            <p>𝑅̂^ calculates the "total variance" by combining two sources: the within-chain variance (the average spread inside each chain) and the between-chain variance (the variance of the chain means). 𝑅̂ is essentially the square root of the ratio of this total variance to the within-chain variance. If the chains have converged, they will be indistinguishable; the between-chain variance will be negligible, and the total variance will equal the within-chain variance, resulting in 𝑅̂ ≈ 1.0. If 𝑅̂ &gt; 1.01, the chains are still distinguishing themselves from one another (the between-chain variance is significant), indicating they have not yet fully explored the target distribution.</p>
+            <p>𝑅̂^ calculates the "total variance" by combining two sources: the within-chain variance (the average spread inside each chain) and the between-chain variance (the variance of the chain means).</p>
+            <p>𝑅̂ is essentially the square root of the ratio of this total variance to the within-chain variance.</p>
+            <p>If the chains have converged, they will be indistinguishable; the between-chain variance will be negligible, and the total variance will equal the within-chain variance, resulting in 𝑅̂ ≈ 1.0.</p>
+            <p>If 𝑅̂ &gt; 1.01, the chains are still distinguishing themselves from one another (the between-chain variance is significant), indicating they have not yet fully explored the target distribution.</p>
             </div>
             <div class="subsection">
                 <span class="subsection-title">
