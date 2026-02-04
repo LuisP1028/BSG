@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KL Divergence Visualizer // Ditherpunk // MathJax</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: #33ff00;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 2vh;
+            left: 2vw;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            width: 90%;
+        }
+        h1 {
+            font-size: clamp(14px, 2.5vw, 24px);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 0;
+            margin-bottom: 1vh;
+            background: #000;
+            display: inline-block;
+            padding: 0.5vh 0.5vw;
+            border: 1px solid #33ff00;
+        }
+        .stat {
+            font-size: clamp(10px, 2vw, 18px);
+            margin-bottom: 0.5vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            padding: 0.2vh 0.5vw;
+            width: fit-content;
+        }
+        /* Style MathJax to match green terminal look */
+        .mjx-chtml {
+            color: #33ff00 !important;
+            font-size: 1.1em !important;
+        }
+        #score-val {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        #instructions {
+            position: absolute;
+            bottom: 2vh;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(10px, 1.5vw, 14px);
+            text-align: center;
+            opacity: 0.8;
+            pointer-events: none;
+            background: #000;
+            padding: 0.5vh 1vw;
+            border: 1px dashed #33ff00;
+            width: 80%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1 id="title">KL_DIVERGENCE_ANALYZER v1.2</h1>
+        <div class="stat" id="formula">
+            $$D_{KL}(P \parallel Q) = \sum_{x \in \mathcal{X}} P(x) \ln\left(\frac{P(x)}{Q(x)}\right)$$
+        </div>
+        <div class="stat" id="score">
+            <span>$$\text{LOSS} \approx$$</span>
+            <span id="score-val">0.0000</span>
+        </div>
+        <div class="stat" id="status">STATUS: ANALYZING...</div>
+    </div>
+
+    <div id="instructions">
+        // INTERFACE CONTROLS //
+        [DRAG] FILLED BARS to adjust MODEL Q(x)
+        OUTLINED BARS represent REALITY P(x)
+    </div>
+
+    <canvas id="mainCanvas"></canvas>
+
+<script>
+/**
+ * KL DIVERGENCE VISUALIZER - DITHERPUNK + MATHJAX
+ * Includes dynamic resizing and real-time entropy calculation.
+ */
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score-val');
+const statusEl = document.getElementById('status');
+const uiLayer = document.getElementById('ui-layer');
+
+const THEME = {
+    bg: '#000000',
+    fg: '#33ff00',
+    dim: '#1a8000',
+};
+
+const BINS = 5;
+let width, height;
+let barWidth, spacing;
+let bottomMargin, topMargin;
+let maxBarHeight;
+let fontSize;
+
+let P = [];
+let Q = [];
+let draggingIndex = -1;
+let ditherPattern = null;
+let jitterAmount = 0;
+
+function init() {
+    window.addEventListener('resize', resize);
+    resize();
+    
+    P = generateNormalizedArray(BINS);
+    Q = new Array(BINS).fill(1/BINS);
+    
+    createAtkinsonDitherPattern();
+    
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    
+    canvas.addEventListener('touchstart', (e) => onMouseDown(e.touches[0]));
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onMouseMove(e.touches[0]); });
+    window.addEventListener('touchend', onMouseUp);
+
+    requestAnimationFrame(loop);
+}
+
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    
+    topMargin = height * 0.35; // Increased to accommodate MathJax
+    bottomMargin = height * 0.15;
+    
+    spacing = width * 0.05;
+    const totalSpacing = spacing * (BINS + 1);
+    barWidth = (width - totalSpacing) / BINS;
+    maxBarHeight = height - topMargin - bottomMargin;
+    
+    fontSize = Math.max(10, Math.floor(width / 65));
+}
+
+function generateNormalizedArray(n) {
+    let arr = [];
+    let sum = 0;
+    for(let i=0; i<n; i++) {
+        let val = Math.random();
+        arr.push(val);
+        sum += val;
+    }
+    return arr.map(x => x / sum);
+}
+
+function createAtkinsonDitherPattern() {
+    const patSize = 64;
+    const pCanvas = document.createElement('canvas');
+    pCanvas.width = patSize;
+    pCanvas.height = patSize;
+    const pCtx = pCanvas.getContext('2d');
+    pCtx.fillStyle = '#666'; 
+    pCtx.fillRect(0,0, patSize, patSize);
+    const imgData = pCtx.getImageData(0, 0, patSize, patSize);
+    const data = imgData.data;
+    for (let y = 0; y < patSize; y++) {
+        for (let x = 0; x < patSize; x++) {
+            const i = (y * patSize + x) * 4;
+            const oldPixel = data[i];
+            const newPixel = oldPixel < 128 ? 0 : 255;
+            const quantError = oldPixel - newPixel;
+            data[i] = data[i+1] = data[i+2] = 0;
+            data[i+3] = newPixel === 0 ? 255 : 0;
+            if (x + 1 < patSize) data[((y) * patSize + (x + 1)) * 4] += quantError * 1/8;
+            if (x + 2 < patSize) data[((y) * patSize + (x + 2)) * 4] += quantError * 1/8;
+            if (y + 1 < patSize) {
+                if (x - 1 > 0) data[((y + 1) * patSize + (x - 1)) * 4] += quantError * 1/8;
+                data[((y + 1) * patSize + x) * 4] += quantError * 1/8;
+                if (x + 1 < patSize) data[((y + 1) * patSize + (x + 1)) * 4] += quantError * 1/8;
+            }
+            if (y + 2 < patSize) data[((y + 2) * patSize + x) * 4] += quantError * 1/8;
+        }
+    }
+    pCtx.putImageData(imgData, 0, 0);
+    pCtx.globalCompositeOperation = 'source-in';
+    pCtx.fillStyle = THEME.fg;
+    pCtx.fillRect(0, 0, patSize, patSize);
+    ditherPattern = ctx.createPattern(pCanvas, 'repeat');
+}
+
+function calculateKL(P, Q) {
+    let kl = 0;
+    for(let i=0; i<P.length; i++) {
+        const qSafe = Math.max(Q[i], 0.0001); 
+        const pSafe = Math.max(P[i], 0.0001);
+        kl += pSafe * Math.log(pSafe / qSafe);
+    }
+    return Math.max(0, kl);
+}
+
+function normalizeQ(skipIndex, newVal) {
+    newVal = Math.max(0.01, Math.min(0.99, newVal));
+    let oldSumOthers = 0;
+    for(let i=0; i<BINS; i++) if(i !== skipIndex) oldSumOthers += Q[i];
+    const targetSumOthers = 1.0 - newVal;
+    Q[skipIndex] = newVal;
+    if (oldSumOthers === 0) {
+        const evenSplit = targetSumOthers / (BINS - 1);
+        for(let i=0; i<BINS; i++) if(i !== skipIndex) Q[i] = evenSplit;
+    } else {
+        const ratio = targetSumOthers / oldSumOthers;
+        for(let i=0; i<BINS; i++) if(i !== skipIndex) Q[i] *= ratio;
+    }
+}
+
+function onMouseDown(e) {
+    const x = e.clientX || e.pageX;
+    const y = e.clientY || e.pageY;
+    let found = -1;
+    for(let i=0; i<BINS; i++) {
+        const barX = spacing + i * (barWidth + spacing);
+        if (x >= barX && x <= barX + barWidth) found = i;
+    }
+    if(found !== -1) { draggingIndex = found; updateBarFromMouse(y); }
+}
+
+function onMouseMove(e) {
+    if(draggingIndex !== -1) updateBarFromMouse(e.clientY || e.pageY);
+}
+
+function onMouseUp() { draggingIndex = -1; }
+
+function updateBarFromMouse(y) {
+    const floorY = topMargin + maxBarHeight;
+    const ceilY = topMargin;
+    let val = 1 - (y - ceilY) / (floorY - ceilY);
+    normalizeQ(draggingIndex, val);
+}
+
+function loop() {
+    ctx.fillStyle = THEME.bg;
+    ctx.fillRect(0, 0, width, height);
+    
+    const klValue = calculateKL(P, Q);
+    scoreEl.innerText = klValue.toFixed(4);
+    jitterAmount = Math.min(8, klValue * 4);
+    
+    if(klValue < 0.05) {
+        statusEl.innerText = "STATUS: CONVERGED [SYNC]";
+        uiLayer.style.transform = `translate(0px, 0px)`;
+    } else {
+        statusEl.innerText = "STATUS: DIVERGENCE DETECTED";
+        uiLayer.style.transform = `translate(${(Math.random()-0.5)*jitterAmount}px, ${(Math.random()-0.5)*jitterAmount}px)`;
+    }
+
+    const floorY = topMargin + maxBarHeight;
+
+    for (let i = 0; i < BINS; i++) {
+        const x = spacing + i * (barWidth + spacing);
+        const pHeight = P[i] * maxBarHeight;
+        const pY = floorY - pHeight;
+        
+        ctx.strokeStyle = THEME.fg;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(x, pY, barWidth, pHeight);
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = THEME.fg;
+        ctx.font = `${fontSize}px monospace`;
+        ctx.fillText(`P:${P[i].toFixed(2)}`, x, pY - 10);
+
+        const qHeight = Q[i] * maxBarHeight;
+        const qY = floorY - qHeight;
+        ctx.fillStyle = ditherPattern || THEME.fg;
+        ctx.fillRect(x, qY, barWidth, qHeight);
+        ctx.strokeStyle = THEME.fg;
+        ctx.strokeRect(x, qY, barWidth, qHeight);
+        
+        ctx.fillStyle = THEME.fg;
+        ctx.fillText(`Q:${Q[i].toFixed(2)}`, x, floorY + fontSize + 5);
+        
+        ctx.beginPath();
+        ctx.moveTo(x + barWidth/2, pY);
+        ctx.lineTo(x + barWidth/2, qY);
+        ctx.stroke();
+
+        const diff = P[i] * Math.log(Math.max(P[i], 1e-9) / Math.max(Q[i], 1e-9));
+        if(diff > 0.05) {
+            ctx.fillText(`+${diff.toFixed(2)}`, x + barWidth/2 + 5, (pY + qY)/2);
+        }
+    }
+    
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    for(let y=0; y<height; y+=4) ctx.fillRect(0, y, width, 1);
+    
+    requestAnimationFrame(loop);
+}
+
+init();
+
+</script>
+</body>
+</html>
